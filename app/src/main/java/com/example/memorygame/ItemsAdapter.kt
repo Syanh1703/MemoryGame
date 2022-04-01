@@ -12,63 +12,59 @@ import androidx.core.view.ViewCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.memorygame.models.BoardSize
 import com.example.memorygame.models.MemoryCard
+import com.example.memorygame.utils.ACTIVITY
+import com.squareup.picasso.Picasso
 import kotlin.math.min
 
-class ItemsAdapter (private val context: Context, private val boardSize :BoardSize, private val cards :List<MemoryCard>,
-private val cardClickListener: CardClickListener)
-    :RecyclerView.Adapter<ItemsAdapter.ViewHolder>(){//It represents one single memory card
+class ItemsAdapter(
+    private val context: Context,
+    private val boardSize: BoardSize,
+    private val cards: List<MemoryCard>,
+    private val cardClickListener: CardClickListener
+) : RecyclerView.Adapter<ItemsAdapter.ViewHolder>() {//It represents one single memory card
 
-    companion object
-    {
+    companion object {
         const val CARD_MARGIN_SIZE = 8
     }
 
     //Create the interface to check the state of the card
-    interface CardClickListener
-    {
+    interface CardClickListener {
         fun onCardClick(position: Int)
     }
 
-    inner class ViewHolder(view: View):RecyclerView.ViewHolder(view)
-    {
+    inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val imageBtn = view.findViewById<ImageButton>(R.id.imgbCard)
-        fun bind(position: Int)
-        {
+        fun bind(position: Int) {
             val cardPos = cards[position]
-            imageBtn.setImageResource(
-                if(cardPos.isFacedUp)//Check if the card is faced up
-                {
-                    cardPos.identifier //Show the image
+            //Render the user images to the Image Button
+            if (cardPos.isFacedUp) {
+                if (cardPos.cardUrl != null) {
+                    Picasso.get().load(cardPos.cardUrl).into(imageBtn)
+                } else {
+                    imageBtn.setImageResource(cardPos.identifier)
                 }
-            else
-                {
-                    R.drawable.ic_launcher_background//Show the default cover image
-                }
-            )
-
+            } else {
+                //If faced down, set launcher background
+                imageBtn.setImageResource(R.drawable.riddler)
+            }
             //Update the UI
-            imageBtn.alpha = if(cardPos.isMatched)//set the opacity
+            imageBtn.alpha = if (cardPos.isMatched)//set the opacity
             {
                 .4f
-            }
-            else
-            {
+            } else {
                 1.0f
             }
 
             //Gray out the background if matched
-            val colorState = if(cardPos.isMatched)
-            {
+            val colorState = if (cardPos.isMatched) {
                 ContextCompat.getColorStateList(context, R.color.gray_background)
-            }
-            else
-            {
+            } else {
                 null
             }
-            ViewCompat.setBackgroundTintList(imageBtn,colorState)
+            ViewCompat.setBackgroundTintList(imageBtn, colorState)
 
             imageBtn.setOnClickListener {
-                Log.i("SyAnh", "Click on position: $position")
+                Log.i(ACTIVITY, "Click on position: $position")
                 //Invoke the method in the interface
                 cardClickListener.onCardClick(position)
             }
@@ -77,16 +73,22 @@ private val cardClickListener: CardClickListener)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         //Set the width automatically
-        val cardWidth = parent.width/boardSize.getGameWidth() - (2*CARD_MARGIN_SIZE)
-        val cardHeight = parent.height/boardSize.getGameHeight() - (2*CARD_MARGIN_SIZE)
+        val cardWidth = parent.width / boardSize.getGameWidth() - (2 * CARD_MARGIN_SIZE)
+        val cardHeight = parent.height / boardSize.getGameHeight() - (2 * CARD_MARGIN_SIZE)
         val cardSize = min(cardHeight, cardWidth)
         val inflater = LayoutInflater.from(context).inflate(R.layout.memory_card, parent, false)
         //Set the dimension to the card View
-        val layoutParams = inflater.findViewById<CardView>(R.id.cvElement).layoutParams as ViewGroup.MarginLayoutParams
+        val layoutParams =
+            inflater.findViewById<CardView>(R.id.cvElement).layoutParams as ViewGroup.MarginLayoutParams
         //Assume the card is square
         layoutParams.height = cardSize
         layoutParams.width = cardSize
-        layoutParams.setMargins(CARD_MARGIN_SIZE, CARD_MARGIN_SIZE, CARD_MARGIN_SIZE, CARD_MARGIN_SIZE)
+        layoutParams.setMargins(
+            CARD_MARGIN_SIZE,
+            CARD_MARGIN_SIZE,
+            CARD_MARGIN_SIZE,
+            CARD_MARGIN_SIZE
+        )
         return ViewHolder(inflater)
     }
 

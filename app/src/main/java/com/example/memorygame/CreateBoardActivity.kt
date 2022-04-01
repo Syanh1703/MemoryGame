@@ -1,5 +1,7 @@
 package com.example.memorygame
 
+import android.app.Activity
+import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -13,42 +15,58 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
 import android.view.MenuItem
+import android.view.View
 import android.widget.Toast
 import androidx.recyclerview.widget.GridLayoutManager
 import com.example.memorygame.models.BoardSize
-import com.example.memorygame.utils.BitMapScaler
-import com.example.memorygame.utils.CHOSEN_BOARD_SIZE
-import com.example.memorygame.utils.isPermissionGranted
-import com.example.memorygame.utils.requestPermission
+import com.example.memorygame.utils.*
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.remoteconfig.ktx.remoteConfig
 import com.google.firebase.storage.ktx.storage
 import kotlinx.android.synthetic.main.activity_create_board.*
 import java.io.ByteArrayOutputStream
+import java.util.*
 
 class CreateBoardActivity : AppCompatActivity() {
 
-    private lateinit var intentBoardSize :BoardSize
-    private var numOfRequiredImages :Int = 0
+    private lateinit var intentBoardSize: BoardSize
+    private var numOfRequiredImages: Int = 0
     private var listOfChoosingImages = mutableListOf<Uri>()
-    private lateinit var imagerAdapter :ImagePickerAdapter
-
-    private var gameName :String = etGameName.text.toString()
+    private lateinit var imagerAdapter: ImagePickerAdapter
 
     //Variables for Firebase
     private val fbStorage = Firebase.storage
     private val fireStore = Firebase.firestore
     private val remoteConfig = Firebase.remoteConfig
 
-    companion object
-    {
+    companion object {
         const val PHOTOS_REQUEST_CODE = 1703
         const val READ_PHOTO_PERMISSION = android.Manifest.permission.READ_EXTERNAL_STORAGE
         const val READ_EXTERNAL_PHOTO = 1605
         const val MIN_GAME_NAME_LENGTH = 4
         const val MAX_GAME_NAME_LENGTH = 14
-        const val ACTIVITY = "SyAnh"
+
+        const val EXISTED_GAME_NAME = "This game name is already existed"
+        const val EXISTED_GAME_NAME_VN = "Tên game này đã tồn tại"
+
+        const val ENCOUNTER_ERROR = "Encounter error while saving game"
+        const val ENCOUNTER_ERROR_VN = "Đã có lỗi xảy ra"
+
+        const val NOT_CREATE_GAME = "Cannot create game"
+        const val NOT_CREATE_GAME_VN = "Không thể khởi tạo trò chơi"
+
+        const val UPLOAD_DONE = "Upload complete, your game name is:"
+        const val UPLOAD_DONE_VN = "Tải lên thành công, trò chơi của bạn là:"
+
+        const val LETTERS_CODE = "The name should be at least 5 letters long"
+        const val LETTER_CODE_VN = "Tên trò chơi phải chứa ít nhất 5 ký tự"
+
+        const val CHOOSE_PIC = "Choose pictures"
+        const val CHOOSE_PIC_VN = "Chọn ảnh"
+
+        const val UPLOAD_PERMISSION = "We need this permission to start the game"
+        const val UPLOAD_PERMISSION_VN = "Chúng tôi cần quyền này để bắt đầu trò chơi"
     }
 
 
@@ -62,27 +80,32 @@ class CreateBoardActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         //Decide the number of picture
         numOfRequiredImages = intentBoardSize.getGamePairs()
-        supportActionBar?.title = "Choose pictures (0/$numOfRequiredImages)"
+        supportActionBar?.title = "${alertMessageShow(CHOOSE_PIC, CHOOSE_PIC_VN)} (0/$numOfRequiredImages)"
 
         //Set the recyclerView
         rvChooseImages.setHasFixedSize(true)
         rvChooseImages.layoutManager = GridLayoutManager(this, intentBoardSize.getGameWidth())
-        imagerAdapter = ImagePickerAdapter(this, listOfChoosingImages, intentBoardSize, object :ImagePickerAdapter.PickImage{
-            override fun onPlaceHolderClick() {
-                //Check for the permission
-                if(isPermissionGranted(this@CreateBoardActivity, READ_PHOTO_PERMISSION))
-                {
-                    launchPhotoIntent()
+        imagerAdapter = ImagePickerAdapter(
+            this,
+            listOfChoosingImages,
+            intentBoardSize,
+            object : ImagePickerAdapter.PickImage {
+                override fun onPlaceHolderClick() {
+                    //Check for the permission
+                    if (isPermissionGranted(this@CreateBoardActivity, READ_PHOTO_PERMISSION)) {
+                        launchPhotoIntent()
+                    } else {
+                        requestPermission(
+                            this@CreateBoardActivity,
+                            READ_PHOTO_PERMISSION,
+                            READ_EXTERNAL_PHOTO
+                        )
+                    }
                 }
-                else
-                {
-                    requestPermission(this@CreateBoardActivity, READ_PHOTO_PERMISSION, READ_EXTERNAL_PHOTO)
-                }
-            }
-        })
+            })
 
         //Add text watcher for the Edit Text
-        etGameName.addTextChangedListener(object :TextWatcher{
+        etGameName.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
                 btnSave.isEnabled = validDataToSave()
             }
@@ -98,7 +121,7 @@ class CreateBoardActivity : AppCompatActivity() {
          * Save game to FireBase
          */
         btnSave.setOnClickListener {
-            handleEachImageUploading(gameName)
+            saveGameToFireStore()
         }
     }
 
@@ -107,22 +130,18 @@ class CreateBoardActivity : AppCompatActivity() {
         permissions: Array<out String>,
         grantResults: IntArray
     ) {
-        if(requestCode == READ_EXTERNAL_PHOTO)
-        {
-            if(grantResults.isNotEmpty() && grantResults[0]==PackageManager.PERMISSION_GRANTED)
-            {
+        if (requestCode == READ_EXTERNAL_PHOTO) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 launchPhotoIntent()
-            }
-            else
-            {
-                Toast.makeText(this, "We need this permission to start the game", Toast.LENGTH_SHORT).show()
+            } else {
+               toastTranslated(UPLOAD_PERMISSION, UPLOAD_PERMISSION_VN)
             }
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if(item.itemId == android.R.id.home)//home stands for the back button
+        if (item.itemId == android.R.id.home)//home stands for the back button
         {
             finish()
             return true
@@ -130,19 +149,21 @@ class CreateBoardActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    private fun launchPhotoIntent()
-    {
+    private fun launchPhotoIntent() {
         val intent = Intent(Intent.ACTION_PICK)
         intent.type = "image/*"//Take only the images
         intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-        startActivityForResult(Intent.createChooser(intent, "Choose your images"), PHOTOS_REQUEST_CODE)
+        intent.setAction(Intent.ACTION_GET_CONTENT)
+        startActivityForResult(
+            Intent.createChooser(intent, alertMessageShow(CHOOSE_PIC, CHOOSE_PIC_VN)),
+            PHOTOS_REQUEST_CODE
+        )
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         //Check the request code first
-        if(requestCode != PHOTOS_REQUEST_CODE || resultCode != RESULT_OK || data == null)
-        {
+        if (requestCode != PHOTOS_REQUEST_CODE || resultCode != RESULT_OK || data == null) {
             Log.w(ACTIVITY, "Did not get the data from the user")
             return
         }
@@ -153,122 +174,192 @@ class CreateBoardActivity : AppCompatActivity() {
          */
         val chosenUri = data.data
         val clipData = data.clipData
-        if(clipData != null)
-        {
-            Log.i("SyAnh", "Number of Clip Data: ${clipData.itemCount}: $clipData")
-            for(i in 0 until clipData.itemCount)
-            {
+        if (clipData != null) {
+            Log.i(ACTIVITY, "Number of Clip Data: ${clipData.itemCount}: $clipData")
+            for (i in 0 until clipData.itemCount) {
                 val clipItem = clipData.getItemAt(i)
                 //Add the item to the Uri
-                if(listOfChoosingImages.size < numOfRequiredImages)
-                {
+                if (listOfChoosingImages.size < numOfRequiredImages) {
                     listOfChoosingImages.add(clipItem.uri)
                 }
             }
-        }
-        else if(chosenUri!=null)//In case some phones do not let the user choose multiple images
+        } else if (chosenUri != null)//In case some phones do not let the user choose multiple images
         {
             listOfChoosingImages.add(chosenUri)
         }
         //Update the title of the activity by process
-        supportActionBar?.title = "Choose Pictures (${listOfChoosingImages.size}/$numOfRequiredImages)"
+        supportActionBar?.title =
+            "${alertMessageShow(CHOOSE_PIC, CHOOSE_PIC_VN)} (${listOfChoosingImages.size}/$numOfRequiredImages)"
         imagerAdapter.notifyDataSetChanged()
         //Enable Save Btn
         btnSave.isEnabled = validDataToSave()
     }
 
-    private fun validDataToSave() :Boolean
-    {
-        if(listOfChoosingImages.size != numOfRequiredImages)
-        {
+    private fun validDataToSave(): Boolean {
+        if (listOfChoosingImages.size != numOfRequiredImages) {
             return false
         }
-        if(etGameName.text.isEmpty() || etGameName.text.length !in MAX_GAME_NAME_LENGTH downTo MIN_GAME_NAME_LENGTH)
-        {
-            Toast.makeText(this, "The name should be at least 5 letters long", Toast.LENGTH_LONG).show()
+        if (etGameName.text.isEmpty() || etGameName.text.length !in MAX_GAME_NAME_LENGTH downTo MIN_GAME_NAME_LENGTH) {
+            toastTranslated(LETTERS_CODE, LETTER_CODE_VN)
             return false
         }
         return true
     }
 
-    private fun handleEachImageUploading(gameName:String)
+    private fun saveGameToFireStore() {
+        btnSave.isEnabled = false
+        /**
+         * When the other user create the game with the same name, everything will be overwritten
+         * Check that we do not overwrite their game
+         */
+        val gameName = etGameName.text.toString()
+        fireStore.collection("games").document(gameName).get().addOnSuccessListener {
+            document -> {}
+            if(document != null && document.data != null)
+            {
+                AlertDialog.Builder(this)
+                    .setTitle("Name taken")
+                    .setMessage(alertMessageShow(EXISTED_GAME_NAME, EXISTED_GAME_NAME_VN))
+                    .setPositiveButton("OK", null)
+                    .show()
+            }
+            else{
+                imageUploading(gameName)
+            }
+        }.addOnFailureListener {exception ->
+            //Not able to retrieve the document
+            Log.e(ACTIVITY, ENCOUNTER_ERROR, exception)
+            toastTranslated(ENCOUNTER_ERROR, ENCOUNTER_ERROR_VN)
+            btnSave.isEnabled = true
+        }
+    }
+
+    private fun downgradeImage(imageUri: Uri): ByteArray {
+        /**
+         * For newer than  Pie Android Version => Use Bitmap and ImageDecoder to decode the images
+         * For other versions => Use getBitmap from Media Store
+         */
+        val originalBitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val source = ImageDecoder.createSource(contentResolver, imageUri)
+            ImageDecoder.decodeBitmap(source)
+        } else {
+            MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
+        }
+
+        Log.i(
+            ACTIVITY,
+            "Original width: ${originalBitmap.width}, Original height: ${originalBitmap.height}"
+        )
+
+        val scaledBitmap = BitMapScaler.scaleHeight(originalBitmap, 250)
+
+        Log.i(
+            ACTIVITY,
+            "ScaledBitmap Height: ${scaledBitmap.height}, ScaledBitmap Width: ${scaledBitmap.width}"
+        )
+        //Compress to JPEG
+        val byteOutputStream = ByteArrayOutputStream()
+        scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 50, byteOutputStream)
+        return byteOutputStream.toByteArray()
+    }
+
+    private fun handleAllUploadedImages(name: String, imageUrl: MutableList<String>) {
+        /**
+         * Upload to Fire Store
+         * Convert one game into one document
+         */
+        fireStore.collection("games").document(name)
+            .set(mapOf("images" to imageUrl))
+            .addOnCompleteListener { gameCreationTask ->
+                pbUpload.visibility = View.GONE
+                if (!gameCreationTask.isSuccessful) {
+                    Log.e(ACTIVITY, "Exception with the game creation")
+                    toastTranslated(NOT_CREATE_GAME, NOT_CREATE_GAME_VN)
+                    return@addOnCompleteListener
+                }
+                Log.i(ACTIVITY, "Successfully create game: $name!!")
+                AlertDialog.Builder(this)
+                    .setTitle("${alertMessageShow(UPLOAD_DONE, UPLOAD_DONE_VN)} $name")
+                    .setPositiveButton("OK")
+                    { _, _ ->
+                        val resultData = Intent()
+                        resultData.putExtra(EXTRA_GAME_NAME, name)
+                        setResult(Activity.RESULT_OK, resultData)
+                        finish()
+                    }.show()
+            }
+    }
+    private fun imageUploading(customGameName :String)
     {
         var didEncounterError = false
         val uploadedUrlList = mutableListOf<String>()
+        pbUpload.visibility = View.VISIBLE
+
         //Downscale the image
-        for((index, imageUri) in listOfChoosingImages.withIndex())
-        {
-            val imageByteArray = downGradeImage(imageUri)
+        for ((index, imageUri) in listOfChoosingImages.withIndex()) {
+            val imageByteArray = downgradeImage(imageUri)
             //Define the file path
-            val filePath = "images/$gameName/${System.currentTimeMillis()}-$index.jpg"//Images will be saved here
+            val filePath =
+                "images/$customGameName/${System.currentTimeMillis()}-$index.jpg"//Images will be saved here
             val imageReference = fbStorage.reference.child(filePath)
             imageReference.putBytes(imageByteArray)
                 .continueWithTask {
                     //Do something when done uploading
-                    imageUploadTask -> Log.i(ACTIVITY, "Amount of uploaded images: ${imageUploadTask?.result.bytesTransferred}")
+                        imageUploadTask ->
+                    Log.i(
+                        ACTIVITY,
+                        "Amount of uploaded images: ${imageUploadTask?.result.bytesTransferred}"
+                    )
                     imageReference.downloadUrl
-                }.addOnCompleteListener {
-                    downloadUrlTask -> if(!downloadUrlTask.isSuccessful)
-                {
-                    Log.e(ACTIVITY, "Error in uploading the images", downloadUrlTask.exception)
-                    Toast.makeText(this, "Failed to upload images", Toast.LENGTH_SHORT).show()
-                    didEncounterError = true
-                    return@addOnCompleteListener
-                }
-                    if(didEncounterError)//Return and do nothing when images failed to upload
+                }.addOnCompleteListener { downloadUrlTask ->
+                    if (!downloadUrlTask.isSuccessful) {
+                        Log.e(ACTIVITY, "Error in uploading the images", downloadUrlTask.exception)
+                        Toast.makeText(this, "Failed to upload images", Toast.LENGTH_SHORT).show()
+                        didEncounterError = true
+                        pbUpload.visibility = View.GONE
+                        return@addOnCompleteListener
+                    }
+                    if (didEncounterError)//Return and do nothing when images failed to upload
                     {
                         return@addOnCompleteListener
                     }
                     val downloadedUrl = downloadUrlTask.result.toString()
                     uploadedUrlList.add(downloadedUrl)
-                    Log.i(ACTIVITY, "Success uploading: $listOfChoosingImages, Number of uploading: ${uploadedUrlList.size}" )
+                    pbUpload.progress = (uploadedUrlList.size)*100/listOfChoosingImages.size
+                    Log.i(
+                        ACTIVITY,
+                        "Success uploading: $listOfChoosingImages, Number of uploading: ${uploadedUrlList.size}"
+                    )
                     //Check the size of the list to know how many images have been successfully uploaded
-                    if(uploadedUrlList.size == listOfChoosingImages.size)
-                    {
-                        handleAllUploadedImages(etGameName.text.toString(), uploadedUrlList)//Set the name and the images
+                    if (uploadedUrlList.size == listOfChoosingImages.size) {
+                        handleAllUploadedImages(
+                            customGameName,
+                            uploadedUrlList
+                        )
                     }
                 }
         }
     }
 
-    private fun downGradeImage(imageUri :Uri) :ByteArray
+    private fun alertMessageShow(engString: String, vnString: String):String
     {
-        /**
-         * For newer than  Pie Android Version => Use Bitmap and ImageDecoder to decode the images
-         * For other versions => Use getBitmap from Media Store
-         */
-        val originalBitmap = if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+        if(Locale.getDefault().displayLanguage.equals(Locale.ENGLISH))
         {
-            val source = ImageDecoder.createSource(contentResolver,imageUri)
-            ImageDecoder.decodeBitmap(source)
+            return engString
         }
         else
         {
-            MediaStore.Images.Media.getBitmap(contentResolver,imageUri)
+            return vnString
         }
-
-        Log.i(ACTIVITY, "Original width: ${originalBitmap.width}, Original height: ${originalBitmap.height}")
-
-        val scaledBitmap = BitMapScaler.scaleHeight(originalBitmap,250)
-
-        Log.i(ACTIVITY, "ScaledBitmap Height: ${scaledBitmap.height}, ScaledBitmap Width: ${scaledBitmap.width}")
-        //Compress to JPEG
-        val byteOutputStream = ByteArrayOutputStream()
-        scaledBitmap.compress(Bitmap.CompressFormat.JPEG,50, byteOutputStream)
-        return byteOutputStream.toByteArray()
     }
 
-    private fun handleAllUploadedImages(name :String, imageUrl:MutableList<String>)
+    private fun toastTranslated(engString:String, vnString: String):String
     {
-        /**
-         * Upload to Fire Store
-         * Convert one game into one document
-         */
-        fireStore.collection("games").document(gameName)
-            .set(mapOf("images" to listOfChoosingImages))
-            .addOnCompleteListener {
-
-            }
-
+        var translatedToast :String = if(Locale.getDefault().displayLanguage.equals(Locale.ENGLISH)) {
+            Toast.makeText(this, engString, Toast.LENGTH_SHORT).show().toString()
+        } else {
+            Toast.makeText(this, vnString, Toast.LENGTH_SHORT).show().toString()
+        }
+        return translatedToast
     }
 }

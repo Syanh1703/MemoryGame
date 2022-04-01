@@ -1,3 +1,15 @@
 <resources>
     <string name="app_name">MemoryGame</string>
+    <string name="refresh">Refresh</string>
+    <string name="level">Choose Your Level</string>
+    <string name="custom">Create custom game</string>
+    <string name="presentGame">Play Your Game</string>
+    <string name="refreshGame">Are you sure want to refresh?</string>
+    <string name="saveGame">Save Game</string>
+    <string name="moves">Moves:0</string>
+    <string name="pair">Pairs:0</string>
+    <string name="easy_level">Easy (4x2)</string>
+    <string name="medium_level">Medium (4x3)</string>
+    <string name="hard_level">Hard (4x6)</string>
+    <string name="super_hard_level">Extremely Hard (5x8)</string>
 </resources>

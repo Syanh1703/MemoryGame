@@ -19,7 +19,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="8dp"
-            android:text="Easy (4x2)"
+            android:text="@string/easy_level"
             android:textSize="25sp" />
 
         <RadioButton
@@ -27,7 +27,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="8dp"
-            android:text="Medium (6x3)"
+            android:text="@string/medium_level"
             android:textSize="25sp" />
 
         <RadioButton
@@ -35,7 +35,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="8dp"
-            android:text="Hard (6x4)"
+            android:text="@string/hard_level"
             android:textSize="25sp" />
 
         <RadioButton
@@ -43,7 +43,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="8dp"
-            android:text="Extremely Hard (8x5)"
+            android:text="@string/super_hard_level"
             android:textSize="25sp" />
 
     </RadioGroup>

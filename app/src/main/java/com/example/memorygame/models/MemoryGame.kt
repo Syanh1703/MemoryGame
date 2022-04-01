@@ -2,10 +2,10 @@ package com.example.memorygame.models
 
 import com.example.memorygame.utils.DEFAULT_ICONS
 
-class MemoryGame(private val boardSize: BoardSize)
+class MemoryGame(private val boardSize: BoardSize, private val customImages: List<String>?)
 {
     val cards :List<MemoryCard>
-    var numPairsFound = 0
+    var numPairsFound :Int = 0
     var foundMatch :Boolean = false
 
     private var indexOfSingleSelectedCards :Int? = null
@@ -13,10 +13,24 @@ class MemoryGame(private val boardSize: BoardSize)
 
     init {
         //Randomize the icons to the cars according to the pairs
-        val chooseImages:List<Int> = DEFAULT_ICONS.shuffled().take(boardSize.getGamePairs())
-        val randomizedImages = (chooseImages + chooseImages).shuffled()
-        //Create a list of Memory Card
-       cards  = randomizedImages.map { MemoryCard(it) }
+
+        /**
+         * 2 cases: User does not play their game => play the default
+         * User plays their game
+         */
+        if(customImages == null)
+        {
+            val chooseImages:List<Int> = DEFAULT_ICONS.shuffled().take(boardSize.getGamePairs())
+            val randomizedImages = (chooseImages + chooseImages).shuffled()
+            //Create a list of Memory Card
+            cards  = randomizedImages.map { MemoryCard(it) }
+        }
+        else
+        {
+            //Use the images from user
+            val randomizedImages = (customImages + customImages).shuffled()
+            cards = randomizedImages.map { MemoryCard(it.hashCode(),it) }
+        }
     }
 
     fun flipCard(position :Int):Boolean

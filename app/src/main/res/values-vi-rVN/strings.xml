@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MemoryGame</string>
+    <string name="refresh">Tải lại</string>
+    <string name="level">Chọn cấp độ chơi</string>
+    <string name="custom">Tạo trò chơi của riêng bạn</string>
+    <string name="presentGame">Tận hưởng trò chơi của bạn</string>
+    <string name="refreshGame">Bạn có thực sự muốn tải lại trò chơi?</string>
+    <string name="saveGame">Lưu trò chơi</string>
+    <string name="moves">Nước cờ:0</string>
+    <string name="pair">Số cặp đúng:0</string>
+    <string name="easy_level">Dễ (4x2)</string>
+    <string name="medium_level">Vừa (4x3)</string>
+    <string name="hard_level">Khó (4x6)</string>
+    <string name="super_hard_level">Siêu khó (5x8)</string>
+</resources>

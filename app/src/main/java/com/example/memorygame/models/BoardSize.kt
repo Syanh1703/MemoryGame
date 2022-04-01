@@ -1,7 +1,6 @@
 package com.example.memorygame.models
 
-enum class BoardSize(val numCards :Int)
-{
+enum class BoardSize(val numCards: Int) {
     //Define number of cards in each level
     /**
      * Implement type-safe
@@ -11,10 +10,13 @@ enum class BoardSize(val numCards :Int)
     HARD(24),
     EXTREMELY_HARD(40);
 
+    companion object {
+        fun getCardsByValue(value: Any) = values().first { it.numCards == value }
+    }
+
     //Adjust the number of columns depend on the level
     fun getGameWidth(): Int {
-        return when(this)
-        {
+        return when (this) {
             EASY -> 2
             MEDIUM -> 3
             HARD -> 4
@@ -23,14 +25,13 @@ enum class BoardSize(val numCards :Int)
     }
 
     //Adjust the number of rows depend on the level
-    fun getGameHeight() :Int{
-        return numCards/getGameWidth()
+    fun getGameHeight(): Int {
+        return numCards / getGameWidth()
     }
 
     //Determine the pairs of card depend on each level
-    fun getGamePairs():Int
-    {
-        return numCards/2
+    fun getGamePairs(): Int {
+        return numCards / 2
     }
 
 }
