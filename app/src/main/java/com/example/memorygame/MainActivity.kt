@@ -3,6 +3,7 @@ package com.example.memorygame
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Color
+import android.media.MediaPlayer
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -22,8 +23,12 @@ import com.example.memorygame.utils.CHOSEN_BOARD_SIZE
 import com.example.memorygame.utils.EXTRA_GAME_NAME
 import com.github.jinatonic.confetti.CommonConfetti
 import com.google.android.material.snackbar.Snackbar
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.ktx.analytics
+import com.google.firebase.firestore.auth.FirebaseAuthCredentialsProvider
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.remoteconfig.ktx.remoteConfig
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.activity_main.*
 
@@ -39,6 +44,11 @@ class MainActivity : AppCompatActivity() {
     private val fireStore = Firebase.firestore
     private var gameName: String? = null
     private var customGameImages: List<String>? = null
+    private val remoteConfig = Firebase.remoteConfig
+    private lateinit var firebaseAnalytics:FirebaseAnalytics
+
+    //Audio effect
+    private var mediaPlayer :MediaPlayer? = null
 
     companion object {
         const val REQUEST_CODE = 1804
@@ -48,6 +58,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        //Firebase Analytics
+        firebaseAnalytics = FirebaseAnalytics.getInstance(this)
         setUpGame()
     }
 
@@ -165,6 +177,8 @@ class MainActivity : AppCompatActivity() {
             tvMoves.text = "${R.string.moves}:0"
             if (memoryGame.hasWonGame()) {
                 Toast.makeText(this, getString(R.string.win_game), Toast.LENGTH_SHORT).show()
+                //Play the sound
+                playMusic(R.raw.yayyy)
                 CommonConfetti.rainingConfetti(
                     clRoot, intArrayOf(
                         Color.YELLOW, Color.BLUE,
@@ -271,4 +285,13 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+    private fun playMusic(mp3:Int)
+    {
+        //Play the sound
+        mediaPlayer = MediaPlayer.create(this, mp3)
+        Toast.makeText(this, "The music is playing", Toast.LENGTH_SHORT).show()
+        mediaPlayer!!.start()
+        mediaPlayer!!.setVolume(100F,100F)
+        mediaPlayer!!.pause()
+    }
 }
