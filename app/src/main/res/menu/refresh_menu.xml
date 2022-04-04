@@ -10,17 +10,16 @@
 
     <item
         android:id="@+id/miChooseLevel"
-        app:showAsAction="never"
         android:title="@string/level"
-        />
+        app:showAsAction="never" />
 
     <item
         android:id="@+id/miCreateGame"
-        app:showAsAction="never"
-        android:title="@string/custom"/>
+        android:title="@string/custom"
+        app:showAsAction="never" />
 
     <item
         android:id="@+id/miPlayCustomGame"
-        app:showAsAction="never"
-        android:title="@string/presentGame"/>
+        android:title="@string/presentGame"
+        app:showAsAction="never" />
 </menu>

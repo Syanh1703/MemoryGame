@@ -34,7 +34,7 @@
                 android:padding="8dp"
                 android:text="@string/moves"
                 android:textColor="@color/purple_500"
-                android:textSize="25sp"
+                android:textSize="20sp"
                 android:textStyle="bold" />
         </androidx.cardview.widget.CardView>
 
@@ -55,7 +55,7 @@
                 android:padding="8dp"
                 android:text="@string/pair"
                 android:textColor="@color/purple_500"
-                android:textSize="25sp"
+                android:textSize="20sp"
                 android:textStyle="bold" />
         </androidx.cardview.widget.CardView>
 

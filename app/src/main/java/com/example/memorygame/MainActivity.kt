@@ -26,7 +26,6 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.activity_main.*
-import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -42,38 +41,7 @@ class MainActivity : AppCompatActivity() {
     private var customGameImages: List<String>? = null
 
     companion object {
-        const val ALERT_REFRESH = "Are you sure want to refresh?"
-        const val ALERT_REFRESH_VN = "Bạn có muốn tải lại trò chơi?"
-
-        const val ALERT_NEW_LEVEL = "Choose your level"
-        const val ALERT_NEW_LEVEL_VN = "Hãy chọn cấp đội chơi"
-
-        const val ALERT_CREATE = "Create your own board"
-        const val ALERT_CREATE_VN = "Tạo trò chơi của riêng bạn"
-
-        const val ALERT_FETCH = "Fetch Your Memory Game"
-        const val ALERT_FETCH_VN = "Hãy nhập tên trò chơi tại đây"
-
-        const val ALERT_NEGATIVE = "Cancel"
-        const val ALERT_NEGATIVE_VN = "Huỷ"
-
-        const val REFRESH_DONE = "Your game has been successfully refreshed"
-        const val REFRESH_DONE_VN = "Tải lại trò chơi thành công"
-
-        const val FIND_GAME_NOT_DONE = "We cannot find any such game"
-        const val FIND_GAME_NOT_DONE_VN = "Chúng tôi không thể tìm thấy trò chơi bạn yêu cầu"
-
-        const val HAVE_WON_GAME = "You have already won"
-        const val HAVE_WON_GAME_VN = "Bạn đã chiến thắng trò chơi"
-
-        const val IS_UP_CARD = "This card is up"
-        const val IS_UP_CARD_VN = "Lá bài này đã được mở"
-
-        const val WON_GAME = "Yayy, you won the game"
-        const val WON_GAME_VN = "Chúc mừng, bạn đã chiến thắng trò chơi"
-
         const val REQUEST_CODE = 1804
-
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -93,13 +61,13 @@ class MainActivity : AppCompatActivity() {
             R.id.miRefresh -> {
                 //Reset the game
                 if (memoryGame.getNumMoves() > 0 && !memoryGame.hasWonGame()) {
-                    showWaringDialog(alertMessageShow(ALERT_REFRESH, ALERT_REFRESH_VN), null, View.OnClickListener {
+                    showWaringDialog(getString(R.string.refreshGame), null, View.OnClickListener {
                         setUpGame()
-                        toastTranslated(REFRESH_DONE, REFRESH_DONE_VN)
+                        Toast.makeText(this, getString(R.string.refresh_done), Toast.LENGTH_SHORT)
+                            .show()
                     })
                 } else {
                     setUpGame()
-                    toastTranslated(REFRESH_DONE, REFRESH_DONE_VN)
                 }
                 return true
             }
@@ -144,7 +112,8 @@ class MainActivity : AppCompatActivity() {
                 if (userImageList?.images == null) {
                     //Wrong
                     Log.e(ACTIVITY, "Invalid custom game from the FireStore")
-                    toastTranslated(FIND_GAME_NOT_DONE, FIND_GAME_NOT_DONE_VN)
+                    Toast.makeText(this, getString(R.string.not_find_game), Toast.LENGTH_SHORT)
+                        .show()
                     return@addOnSuccessListener
                 }
                 //If success, re set up the game
@@ -160,7 +129,7 @@ class MainActivity : AppCompatActivity() {
 
                 Snackbar.make(
                     clRoot,
-                    "You are playing the custom game: $createdGameName",
+                    "${getString(R.string.custom_game)}: $createdGameName",
                     Snackbar.LENGTH_SHORT
                 ).show()
                 gameName = createdGameName
@@ -179,29 +148,35 @@ class MainActivity : AppCompatActivity() {
         //User wins the game
         if (memoryGame.hasWonGame()) {
             //Show a Snackbar
-            toastTranslated(HAVE_WON_GAME, HAVE_WON_GAME_VN)
+            Toast.makeText(this, getString(R.string.have_won_game), Toast.LENGTH_SHORT).show()
             return
         }
         //Prevent double click
         if (memoryGame.isCardFacedUp(position)) {
-            toastTranslated(IS_UP_CARD, IS_UP_CARD_VN)
+            Toast.makeText(this, getString(R.string.is_up_card), Toast.LENGTH_SHORT).show()
             return
         }
 
         //Determine what happen to the state of the game
         if (memoryGame.flipCard(position)) {
             Log.i(ACTIVITY, "Found a match with num of pairs: ${memoryGame.numPairsFound}")
-            movesPairsToVietnamese(memoryGame.numPairsFound, boardSize.getGamePairs())
+            tvPairs.text =
+                "${getString(R.string.pair)}: ${memoryGame.numPairsFound}/${boardSize.getGamePairs()}"
+            tvMoves.text = "${R.string.moves}:0"
             if (memoryGame.hasWonGame()) {
-                toastTranslated(WON_GAME, WON_GAME_VN)
-                CommonConfetti.rainingConfetti(clRoot, intArrayOf(Color.YELLOW, Color.BLUE,
-                Color.CYAN)).oneShot()
+                Toast.makeText(this, getString(R.string.win_game), Toast.LENGTH_SHORT).show()
+                CommonConfetti.rainingConfetti(
+                    clRoot, intArrayOf(
+                        Color.YELLOW, Color.BLUE,
+                        Color.CYAN
+                    )
+                ).oneShot()
             }
         }
 
         //Update the moves
         val numMoves = memoryGame.getNumMoves()
-        numMovesTranslate(numMoves)
+        tvMoves.text = "${getString(R.string.moves)}:$numMoves"
         //Update itself
         gameAdapter.notifyDataSetChanged()
     }
@@ -221,19 +196,19 @@ class MainActivity : AppCompatActivity() {
                     //Add logic for toggling card
                     updateGameWithFilliped(position)
                 }
-
             })
         rvBoard.adapter = gameAdapter
         rvBoard.layoutManager = GridLayoutManager(this, boardSize.getGameWidth())
         //Span count stands for the number of columns
-        movesPairsToVietnamese(0, boardSize.getGamePairs())
+        tvPairs.text = "${getString(R.string.pair)}:0/${boardSize.getGamePairs()}"
+        tvMoves.text = "${getString(R.string.moves)}:0"
     }
 
     private fun showWaringDialog(title: String, view: View?, positiveClick: View.OnClickListener) {
         val warningDialog = AlertDialog.Builder(this)
         warningDialog.setTitle(title)
         warningDialog.setView(view)
-        warningDialog.setNegativeButton(alertMessageShow(ALERT_NEGATIVE, ALERT_NEGATIVE_VN), null)
+        warningDialog.setNegativeButton(getString(R.string.cancel), null)
         warningDialog.setPositiveButton("OK")
         { _, _ ->
             positiveClick.onClick(null)
@@ -251,7 +226,7 @@ class MainActivity : AppCompatActivity() {
             BoardSize.HARD -> radioGroupOptions.check(R.id.rbHard)
             BoardSize.EXTREMELY_HARD -> radioGroupOptions.check(R.id.rbSuperHard)
         }
-        showWaringDialog(alertMessageShow(ALERT_NEW_LEVEL, ALERT_NEW_LEVEL_VN), boardSizeLevel, View.OnClickListener {
+        showWaringDialog(getString(R.string.chooseLevel), boardSizeLevel, View.OnClickListener {
             boardSize = when (radioGroupOptions.checkedRadioButtonId) {
                 R.id.rbEasy -> BoardSize.EASY
                 R.id.rbMedium -> BoardSize.MEDIUM
@@ -271,7 +246,7 @@ class MainActivity : AppCompatActivity() {
         //Let the user choose the size
         val boardSizeLevel = LayoutInflater.from(this).inflate(R.layout.dialog_level, null)
         val radioGroupOptions = boardSizeLevel.findViewById<RadioGroup>(R.id.radioGroupOptions)
-        showWaringDialog(alertMessageShow(ALERT_CREATE, ALERT_CREATE_VN), boardSizeLevel, View.OnClickListener {
+        showWaringDialog(getString(R.string.create_board), boardSizeLevel, View.OnClickListener {
             val chosenSize = when (radioGroupOptions.checkedRadioButtonId) {
                 R.id.rbEasy -> BoardSize.EASY
                 R.id.rbMedium -> BoardSize.MEDIUM
@@ -289,58 +264,11 @@ class MainActivity : AppCompatActivity() {
     private fun showGameToDownloadDialog() {
         val downloadBoard = LayoutInflater.from(this).inflate(R.layout.download_board, null)
         val etDownloadGame = downloadBoard.findViewById<EditText>(R.id.etDownloadGame)
-        showWaringDialog(alertMessageShow(ALERT_FETCH, ALERT_FETCH_VN), downloadBoard, View.OnClickListener {
+        showWaringDialog(getString(R.string.fetch), downloadBoard, View.OnClickListener {
             //Grab the text of the game name that user wants to download
             val downloadGameName = etDownloadGame.text.toString()
             downloadGame(downloadGameName)
         })
     }
 
-    private fun movesPairsToVietnamese(num1 :Int, num2:Int)
-    {
-        if(Locale.getDefault().displayLanguage.equals(Locale.ENGLISH))
-        {
-            tvPairs.text = "Pairs: $num1/$num2"
-            tvPairs.text = "Moves:$num1"
-        }
-        else
-        {
-            tvPairs.text = "Cặp đúng: $num1/$num2"
-            tvMoves.text = "Lượt: $num1"
-        }
-    }
-
-    private fun numMovesTranslate(num1:Int)
-    {
-        if(Locale.getDefault().displayLanguage.equals(Locale.ENGLISH))
-        {
-            tvPairs.text = "Moves:$num1"
-        }
-        else
-        {
-            tvMoves.text = "Lượt: $num1"
-        }
-    }
-
-    private fun toastTranslated(engString:String, vnString: String):String
-    {
-        var translatedToast :String = if(Locale.getDefault().displayLanguage.equals(Locale.ENGLISH)) {
-            Toast.makeText(this, engString, Toast.LENGTH_SHORT).show().toString()
-        } else {
-            Toast.makeText(this, vnString, Toast.LENGTH_SHORT).show().toString()
-        }
-        return translatedToast
-    }
-    
-    private fun alertMessageShow(engString: String, vnString: String):String
-    {
-        if(Locale.getDefault().displayLanguage.equals(Locale.ENGLISH))
-        {
-            return engString
-        }
-        else
-        {
-            return vnString
-        }
-    }
 }
