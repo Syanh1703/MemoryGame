@@ -22,4 +22,14 @@
         android:id="@+id/miPlayCustomGame"
         android:title="@string/presentGame"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/miAbout"
+        android:title="@string/source_code"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/miFBLogOut"
+        android:title="@string/log_out"
+        app:showAsAction="never"/>
 </menu>

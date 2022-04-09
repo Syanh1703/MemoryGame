@@ -10,4 +10,5 @@
     <color name="gray_background"> #d1d1e0</color>
     <color name="brown_orange">#ff9933</color>
     <color name="light_blue">#0066ff</color>
+    <color name="grass_green">#228B22</color>
 </resources>

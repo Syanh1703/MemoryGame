@@ -6,6 +6,7 @@ const val CHOSEN_BOARD_SIZE = "Board Size"
 const val EXTRA_GAME_NAME = "name"
 const val ACTIVITY = "SyAnh"
 
+
 val DEFAULT_ICONS = listOf(
     R.drawable.ic_android_black_24dp,
     R.drawable.ic_baseline_4k_24,

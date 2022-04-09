@@ -61,7 +61,7 @@ class CreateBoardActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         //Decide the number of picture
         numOfRequiredImages = intentBoardSize.getGamePairs()
-        supportActionBar?.title = "${getString(R.string.choose_pic)} (0/$numOfRequiredImages)"
+        supportActionBar?.title = "${stringConvert(R.string.choose_pic)} (0/$numOfRequiredImages)"
 
         //Set the recyclerView
         rvChooseImages.setHasFixedSize(true)
@@ -115,7 +115,7 @@ class CreateBoardActivity : AppCompatActivity() {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 launchPhotoIntent()
             } else {
-               Toast.makeText(this, getString(R.string.permission), Toast.LENGTH_SHORT).show()
+               Toast.makeText(this, stringConvert(R.string.permission), Toast.LENGTH_SHORT).show()
             }
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
@@ -136,7 +136,7 @@ class CreateBoardActivity : AppCompatActivity() {
         intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
         intent.setAction(Intent.ACTION_GET_CONTENT)
         startActivityForResult(
-            Intent.createChooser(intent, getString(R.string.choose_pic)),
+            Intent.createChooser(intent, stringConvert(R.string.choose_pic)),
             PHOTOS_REQUEST_CODE
         )
     }
@@ -170,7 +170,7 @@ class CreateBoardActivity : AppCompatActivity() {
         }
         //Update the title of the activity by process
         supportActionBar?.title =
-            "${getString(R.string.choose_pic)} (${listOfChoosingImages.size}/$numOfRequiredImages)"
+            "${stringConvert(R.string.choose_pic)} (${listOfChoosingImages.size}/$numOfRequiredImages)"
         imagerAdapter.notifyDataSetChanged()
         //Enable Save Btn
         btnSave.isEnabled = validDataToSave()
@@ -181,7 +181,7 @@ class CreateBoardActivity : AppCompatActivity() {
             return false
         }
         if (etGameName.text.isEmpty() || etGameName.text.length !in MAX_GAME_NAME_LENGTH downTo MIN_GAME_NAME_LENGTH) {
-            Toast.makeText(this, getString(R.string.letter_code), Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, stringConvert(R.string.letter_code), Toast.LENGTH_SHORT).show()
             return false
         }
         return true
@@ -200,7 +200,7 @@ class CreateBoardActivity : AppCompatActivity() {
             {
                 AlertDialog.Builder(this)
                     .setTitle("Name taken")
-                    .setMessage(getString(R.string.existed_game))
+                    .setMessage(stringConvert(R.string.existed_game))
                     .setPositiveButton("OK", null)
                     .show()
             }
@@ -210,7 +210,7 @@ class CreateBoardActivity : AppCompatActivity() {
         }.addOnFailureListener {exception ->
             //Not able to retrieve the document
             Log.e(ACTIVITY, ENCOUNTER_ERROR, exception)
-            Toast.makeText(this, getString(R.string.error), Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, stringConvert(R.string.error), Toast.LENGTH_SHORT).show()
             btnSave.isEnabled = true
         }
     }
@@ -255,12 +255,12 @@ class CreateBoardActivity : AppCompatActivity() {
                 pbUpload.visibility = View.GONE
                 if (!gameCreationTask.isSuccessful) {
                     Log.e(ACTIVITY, "Exception with the game creation")
-                    Toast.makeText(this, getString(R.string.not_create), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, stringConvert(R.string.not_create), Toast.LENGTH_SHORT).show()
                     return@addOnCompleteListener
                 }
                 Log.i(ACTIVITY, "Successfully create game: $name!!")
                 AlertDialog.Builder(this)
-                    .setTitle("${getString(R.string.upload_done)} $name")
+                    .setTitle("${stringConvert(R.string.upload_done)} $name")
                     .setPositiveButton("OK")
                     { _, _ ->
                         val resultData = Intent()
@@ -295,7 +295,7 @@ class CreateBoardActivity : AppCompatActivity() {
                 }.addOnCompleteListener { downloadUrlTask ->
                     if (!downloadUrlTask.isSuccessful) {
                         Log.e(ACTIVITY, "Error in uploading the images", downloadUrlTask.exception)
-                        Toast.makeText(this, getString(R.string.fail_upload), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, stringConvert(R.string.fail_upload), Toast.LENGTH_SHORT).show()
                         didEncounterError = true
                         pbUpload.visibility = View.GONE
                         return@addOnCompleteListener
@@ -322,13 +322,8 @@ class CreateBoardActivity : AppCompatActivity() {
         }
     }
 
-    private fun toastTranslated(engString:String, vnString: String):String
+    private fun stringConvert(string:Int):String
     {
-        var translatedToast :String = if(Locale.getDefault().displayLanguage.equals(Locale.ENGLISH)) {
-            Toast.makeText(this, engString, Toast.LENGTH_SHORT).show().toString()
-        } else {
-            Toast.makeText(this, vnString, Toast.LENGTH_SHORT).show().toString()
-        }
-        return translatedToast
+        return getString(string)
     }
 }

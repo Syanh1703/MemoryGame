@@ -5,7 +5,7 @@
     <string name="level">Chọn cấp độ chơi</string>
     <string name="custom">Tạo trò chơi của riêng bạn</string>
     <string name="presentGame">Tận hưởng trò chơi của bạn</string>
-    <string name="refreshGame">Bạn có thực sự muốn tải lại trò chơi?</string>
+    <string name="refresh_game">Bạn có thực sự muốn tải lại trò chơi?</string>
     <string name="saveGame">Lưu trò chơi</string>
     <string name="moves">Nước cờ</string>
     <string name="pair">Số cặp đúng</string>
@@ -32,4 +32,10 @@
     <string name="letter_code">Tên trò chơi phải chứa ít nhất 5 ký tự</string>
     <string name="permission">Chúng tôi cần quyền truy cập để tiếp tục</string>
     <string name="fail_upload">Không thể đưa hình ảnh lên cloud</string>
+    <string name="source_code">Code gốc</string>
+    <string name="welcome">Chào mừng đến với trò chơi</string>
+    <string name="email_or_phone">Email hoặc số điện thoại</string>
+    <string name="password">Mật khẩu</string>
+    <string name="log_in">Đăng nhập</string>
+    <string name="log_out">Đăng xuất</string>
 </resources>

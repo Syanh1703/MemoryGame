@@ -3,6 +3,7 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Android_Code Fresher/Kotlin/MemoryGame/app/src/main/res/drawable/custom_item.xml" value="0.219" />
         <entry key="..\:/Android_Code Fresher/Kotlin/MemoryGame/app/src/main/res/drawable/ic_android_black_24dp.xml" value="0.1445" />
         <entry key="..\:/Android_Code Fresher/Kotlin/MemoryGame/app/src/main/res/drawable/ic_baseline_4k_24.xml" value="0.1445" />
         <entry key="..\:/Android_Code Fresher/Kotlin/MemoryGame/app/src/main/res/drawable/ic_baseline_account_balance_wallet_24.xml" value="0.1445" />
@@ -24,8 +25,11 @@
         <entry key="..\:/Android_Code Fresher/Kotlin/MemoryGame/app/src/main/res/drawable/ic_baseline_flood_24.xml" value="0.2185" />
         <entry key="..\:/Android_Code Fresher/Kotlin/MemoryGame/app/src/main/res/drawable/ic_baseline_https_24.xml" value="0.2185" />
         <entry key="..\:/Android_Code Fresher/Kotlin/MemoryGame/app/src/main/res/drawable/ic_cover_image.xml" value="0.2185" />
+        <entry key="..\:/Android_Code Fresher/Kotlin/MemoryGame/app/src/main/res/drawable/ic_info_24.xml" value="0.219" />
         <entry key="..\:/Android_Code Fresher/Kotlin/MemoryGame/app/src/main/res/drawable/ic_launcher_background.xml" value="0.2185" />
+        <entry key="..\:/Android_Code Fresher/Kotlin/MemoryGame/app/src/main/res/drawable/ic_person_24.xml" value="0.219" />
         <entry key="..\:/Android_Code Fresher/Kotlin/MemoryGame/app/src/main/res/layout/activity_create_board.xml" value="0.358695652173913" />
+        <entry key="..\:/Android_Code Fresher/Kotlin/MemoryGame/app/src/main/res/layout/activity_facebook_log_in.xml" value="0.22" />
         <entry key="..\:/Android_Code Fresher/Kotlin/MemoryGame/app/src/main/res/layout/activity_main.xml" value="0.213768115942029" />
         <entry key="..\:/Android_Code Fresher/Kotlin/MemoryGame/app/src/main/res/layout/card_image.xml" value="0.358695652173913" />
         <entry key="..\:/Android_Code Fresher/Kotlin/MemoryGame/app/src/main/res/layout/dialog_level.xml" value="0.2864583333333333" />

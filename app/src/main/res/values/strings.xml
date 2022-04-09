@@ -1,10 +1,10 @@
 <resources>
-    <string name="app_name">MemoryGame</string>
+    <string name="app_name">Memory Game</string>
     <string name="refresh">Refresh</string>
     <string name="level">Choose Your Level</string>
     <string name="custom">Create custom game</string>
     <string name="presentGame">Play Your Game</string>
-    <string name="refreshGame">Are you sure want to refresh?</string>
+    <string name="refresh_game">Are you sure want to refresh?</string>
     <string name="saveGame">Save Game</string>
     <string name="moves">Moves</string>
     <string name="pair">Pairs</string>
@@ -31,4 +31,14 @@
     <string name="letter_code">Game name must be at least 5 letters long</string>
     <string name="permission">We need this permission to start the game</string>
     <string name="fail_upload">Fail to upload images</string>
+    <string name="source_code">Source Code</string>
+
+    <string name="facebook_app_id" translatable="false">727642788265573</string>
+    <string name="fb_login_protocol_scheme" translatable="false">fb1234</string>
+    <string name="facebook_client_token" translatable="false">56789</string>
+    <string name="welcome">Welcome to Memory Game</string>
+    <string name="email_or_phone">Email or Phone Number</string>
+    <string name="password">Password</string>
+    <string name="log_in">Log In</string>
+    <string name="log_out">Log Out</string>
 </resources>
