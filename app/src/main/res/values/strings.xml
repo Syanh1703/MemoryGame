@@ -36,9 +36,12 @@
     <string name="facebook_app_id" translatable="false">727642788265573</string>
     <string name="fb_login_protocol_scheme" translatable="false">fb1234</string>
     <string name="facebook_client_token" translatable="false">56789</string>
-    <string name="welcome">Welcome to Memory Game</string>
+    <string name="welcome_game">Welcome to Memory Game</string>
     <string name="email_or_phone">Email or Phone Number</string>
     <string name="password">Password</string>
     <string name="log_in">Log In</string>
-    <string name="log_out">Log Out</string>
+    <string name="log_out_google">Log Out Google Account</string>
+    <string name="welcome_user">Welcome</string>
+    <string name="login_failed_google">Login failed due to</string>
+    <string name="login_cancel">Login Cancelled</string>
 </resources>

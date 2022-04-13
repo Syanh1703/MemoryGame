@@ -49,7 +49,7 @@
 
         </activity>
 
-        <activity android:name=".FacebookLogInActivity"
+        <activity android:name=".SocialLogInActivity"
             android:exported="true"
             android:screenOrientation="portrait"
             >

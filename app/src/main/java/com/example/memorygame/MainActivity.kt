@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.media.MediaPlayer
+import android.net.InetAddresses
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -24,11 +25,14 @@ import com.example.memorygame.models.MemoryGame
 import com.example.memorygame.utils.ACTIVITY
 import com.example.memorygame.utils.CHOSEN_BOARD_SIZE
 import com.example.memorygame.utils.EXTRA_GAME_NAME
+import com.facebook.CallbackManager
 import com.facebook.login.LoginManager
 import com.github.jinatonic.confetti.CommonConfetti
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.analytics.ktx.logEvent
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.remoteconfig.ktx.remoteConfig
@@ -55,6 +59,12 @@ class MainActivity : AppCompatActivity() {
     //Audio effect
     private var mediaPlayer :MediaPlayer? = null
 
+    //Log out Google
+    private lateinit var firebaseAuth :FirebaseAuth
+
+    private lateinit var callbackManager : CallbackManager
+    private lateinit var loginManager: LoginManager
+
     companion object {
         const val REQUEST_CODE = 1804
     }
@@ -63,7 +73,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        facebookKeyHash()
+        //facebookKeyHash()
 
         remoteConfig.setDefaultsAsync(mapOf("about_link" to "https://github.com/Syanh1703/MemoryGame", "scale_height" to 250L, "scale_width" to 60L))
         remoteConfig.fetchAndActivate().addOnCompleteListener {
@@ -78,14 +88,20 @@ class MainActivity : AppCompatActivity() {
         }
         setUpGame()
 
-        if(FacebookLogInActivity.fbName != null)
+        if(SocialLogInActivity.fbName != null)
         {
-            Toast.makeText(this, "Welcome : ${FacebookLogInActivity.fbName}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "${stringConvert(R.string.welcome_user)} : ${SocialLogInActivity.fbName}", Toast.LENGTH_SHORT).show()
         }
         else
         {
-            Toast.makeText(this, "Welcome", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, stringConvert(R.string.welcome_user), Toast.LENGTH_SHORT).show()
         }
+
+        //Google Sign Out
+        firebaseAuth = Firebase.auth
+
+        //Facebook Log Out
+        callbackManager = CallbackManager.Factory.create()
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -129,8 +145,18 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(aboutLink)))
                 return true
             }
+            R.id.miGGLogOut -> {
+                firebaseAuth.signOut()
+                updateSignOutUI()
+                return true
+            }
             R.id.miFBLogOut -> {
-                FacebookLogInActivity.userLogOut()
+                //loginManager.logOut()
+                //updateSignOutUI()
+                Toast.makeText(this,"Still working", Toast.LENGTH_SHORT).show()
+                /**
+                 * Need to finish it
+                 */
                 return true
             }
         }
@@ -369,5 +395,13 @@ class MainActivity : AppCompatActivity() {
     private fun stringConvert(string:Int):String
     {
         return getString(string)
+    }
+
+    private fun updateSignOutUI()
+    {
+        val intent = Intent(this, SocialLogInActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        finish()
     }
 }
