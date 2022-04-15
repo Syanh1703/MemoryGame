@@ -44,4 +44,5 @@
     <string name="welcome_user">Welcome</string>
     <string name="login_failed_google">Login failed due to</string>
     <string name="login_cancel">Login Cancelled</string>
+
 </resources>

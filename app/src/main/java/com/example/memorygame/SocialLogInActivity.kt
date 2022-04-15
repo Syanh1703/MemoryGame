@@ -5,7 +5,6 @@ import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
-import android.view.View
 import android.widget.Toast
 import com.facebook.*
 import com.facebook.BuildConfig
@@ -17,8 +16,6 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.SignInButton
 import com.google.android.gms.common.api.ApiException
-import com.google.android.gms.tasks.Task
-import com.google.firebase.FirebaseException
 import com.google.firebase.auth.FacebookAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -26,23 +23,23 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.android.synthetic.main.activity_social_sign_in.*
-import java.nio.file.StandardCopyOption
 
 class SocialLogInActivity : AppCompatActivity() {
 
-    private lateinit var firebaseAuth : FirebaseAuth
-    private lateinit var callbackManager : CallbackManager
-    private lateinit var googleSignInClient :GoogleSignInClient
+    private lateinit var firebaseAuth: FirebaseAuth
+    private lateinit var callbackManager: CallbackManager
+    private lateinit var googleSignInClient: GoogleSignInClient
+    private lateinit var lastSignedGoogle: GoogleSignInAccount
 
-    private var fbId :String? = null
-    private var fbFirstName :String? = null
-    private var fbMiddleName:String? = null
-    private var fbLastName:String? = null
-    private var fbEmail:String? = null
+    private var fbId: String? = null
+    private var fbFirstName: String? = null
+    private var fbMiddleName: String? = null
+    private var fbLastName: String? = null
+    private var fbEmail: String? = null
 
-    companion object{
-        const val SOCIAL_ACTIVITY = "Social Log In Activity"
-        var fbName :String? = null
+    companion object {
+        const val SOCIAL_ACTIVITY = "SocialLogInActivity"
+        var fbName: String? = null
         const val GG_CODE = 1804
     }
 
@@ -50,39 +47,41 @@ class SocialLogInActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_social_sign_in)
 
-        //Check Logged In
-        if(isLoggedInByFacebook())
-        {
-            Log.i(SOCIAL_ACTIVITY, "Already Logged In")
-            val intent = Intent(this, MainActivity::class.java)
-            startActivity(intent)
+        //Check Logged In By Facebook
+
+        /**
+         * Check logged In By google, block Comment the Facebook
+         */
+
+        /*if (isLoggedInByFacebook()) {
+            Log.i(SOCIAL_ACTIVITY, "Already Logged In by Facebook")
+            intentToMain()
             finish()
-        }
-        else
-        {
+        } else {
             Log.i(SOCIAL_ACTIVITY, "Not logged in")
-        }
+        }*/
 
         //firebaseAuth = FirebaseAuth.getInstance()
         firebaseAuth = Firebase.auth
         callbackManager = CallbackManager.Factory.create()
         btnContOnFB.setOnClickListener {
-            LoginManager.getInstance().logInWithReadPermissions(this, listOf("public_profile", "email"))
+            LoginManager.getInstance()
+                .logInWithReadPermissions(this, listOf("public_profile", "email"))
         }
         signInWithFacebook()
 
         //Google
-        isLoggedInByGoogle()
+        //isLoggedInByGoogle()
         btnGoogle.setSize(SignInButton.SIZE_STANDARD)
-        btnGoogle.visibility = View.VISIBLE
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestEmail()
             .requestIdToken(getString(R.string.default_web_client_id))
+            .requestEmail()
             .build()
-        googleSignInClient  = GoogleSignIn.getClient(this, gso)
+        googleSignInClient = GoogleSignIn.getClient(this, gso)
+        lastSignedGoogle = GoogleSignIn.getLastSignedInAccount(this)!!
 
         btnGoogle.setOnClickListener {
-            val signingIntent =googleSignInClient.signInIntent
+            val signingIntent = googleSignInClient.signInIntent
             startActivityForResult(signingIntent, GG_CODE)
         }
     }
@@ -94,16 +93,17 @@ class SocialLogInActivity : AppCompatActivity() {
         callbackManager.onActivityResult(requestCode, resultCode, data)
 
         //Google
-        if(requestCode== GG_CODE)
-        {
+        if (requestCode == GG_CODE) {
             val task = GoogleSignIn.getSignedInAccountFromIntent(data)
             try {
-                val acc = task!!.getResult(ApiException::class.java)
-                Toast.makeText(this, "${stringCovert(R.string.welcome_user)} ${acc.displayName}", Toast.LENGTH_SHORT).show()
-                googleAccountToFirebase(acc)
-            }
-            catch (e:ApiException)
-            {
+                val acc = task.getResult(ApiException::class.java)
+                Toast.makeText(
+                    this,
+                    "${stringCovert(R.string.welcome_user)} ${acc.displayName}",
+                    Toast.LENGTH_SHORT
+                ).show()
+                googleAccountToFirebase(acc.idToken!!)
+            } catch (e: ApiException) {
                 Log.w(SOCIAL_ACTIVITY, "Login by Google Account failed. Code: ${e.statusCode}")
             }
         }
@@ -116,19 +116,16 @@ class SocialLogInActivity : AppCompatActivity() {
         updateUIGoogle(user)
     }
 
-    private fun googleAccountToFirebase(account: GoogleSignInAccount?) {
-        val googleCred = GoogleAuthProvider.getCredential(account!!.idToken,null)
+    private fun googleAccountToFirebase(account: String) {
+        val googleCred = GoogleAuthProvider.getCredential(account, null)
         firebaseAuth.signInWithCredential(googleCred)
-            .addOnCompleteListener (this){ task ->
-                if(task.isSuccessful)
-                {
+            .addOnCompleteListener(this) { task ->
+                if (task.isSuccessful) {
                     Log.d(SOCIAL_ACTIVITY, "Sign in success")
                     val user = firebaseAuth.currentUser
                     updateUIGoogle(user)
-                }
-                else
-                {
-                    Toast.makeText(this,"Sign in failed", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Sign in failed", Toast.LENGTH_SHORT).show()
                     Log.d(SOCIAL_ACTIVITY, "Sign In failed")
                     updateUIGoogle(null)
                 }
@@ -136,11 +133,14 @@ class SocialLogInActivity : AppCompatActivity() {
 
     }
 
-    private fun signInWithFacebook()
-    {
-        btnContOnFB.registerCallback(callbackManager,object : FacebookCallback<LoginResult> {
+    private fun signInWithFacebook() {
+        btnContOnFB.registerCallback(callbackManager, object : FacebookCallback<LoginResult> {
             override fun onCancel() {
-                Toast.makeText(this@SocialLogInActivity, stringCovert(R.string.login_cancel), Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this@SocialLogInActivity,
+                    stringCovert(R.string.login_cancel),
+                    Toast.LENGTH_SHORT
+                ).show()
             }
 
             override fun onError(error: FacebookException) {
@@ -154,127 +154,102 @@ class SocialLogInActivity : AppCompatActivity() {
         })
     }
 
-    private fun handleFacebookAccess(accessToken: AccessToken?)
-    {
+    private fun handleFacebookAccess(accessToken: AccessToken?) {
         /**
          * Get Credential
          */
         val cred = FacebookAuthProvider.getCredential(accessToken!!.token)
         firebaseAuth.signInWithCredential(cred)
-            .addOnFailureListener {e ->
+            .addOnFailureListener { e ->
                 Toast.makeText(this, e.message, Toast.LENGTH_SHORT).show()
             }
             .addOnSuccessListener { success ->
                 //Get User Email
-                val email:String? = success.user!!.email
+                val email: String? = success.user!!.email
                 //Toast.makeText(this, "Log In Successfully with email: $email", Toast.LENGTH_SHORT).show()
-                Log.i(SOCIAL_ACTIVITY,"Welcome $email")
+                Log.i(SOCIAL_ACTIVITY, "Welcome $email")
             }
     }
 
     @SuppressLint("LongLogTag")
-    fun getUserProfile(token: AccessToken?, userId:String)
-    {
+    fun getUserProfile(token: AccessToken?, userId: String) {
         val params = Bundle()
         params.putString(
-            "fields","id, first_name, middle_name, last_name, name, picture, email"
+            "fields", "id, first_name, middle_name, last_name, name, picture, email"
         )
         /**
          * Use Graph Request
          */
         GraphRequest(token, "/$userId/", params, HttpMethod.GET,
-            GraphRequest.Callback {
-                    response -> val jSonObject = response.jsonObject
+            GraphRequest.Callback { response ->
+                val jSonObject = response.jsonObject
 
                 //Can't see by using Log
-                if(BuildConfig.DEBUG)//Turn on Debug Mode
+                if (BuildConfig.DEBUG)//Turn on Debug Mode
                 {
                     FacebookSdk.setIsDebugEnabled(true)
                     FacebookSdk.addLoggingBehavior(LoggingBehavior.INCLUDE_ACCESS_TOKENS)
                 }
 
                 //Facebook Id
-                if(jSonObject!!.has("id"))
-                {
+                if (jSonObject!!.has("id")) {
                     fbId = jSonObject.getString("id")
                     Log.i(SOCIAL_ACTIVITY, "Facebook ID is: $fbId")
-                }
-                else
-                {
+                } else {
                     Log.i(SOCIAL_ACTIVITY, "Facebook ID not existed")
                 }
 
                 //Facebook First Name
-                if(jSonObject!!.has("first_name"))
-                {
+                if (jSonObject!!.has("first_name")) {
                     fbFirstName = jSonObject.getString("first_name")
                     Log.i(SOCIAL_ACTIVITY, "First Name is: $fbFirstName")
-                }
-                else
-                {
+                } else {
                     Log.i(SOCIAL_ACTIVITY, "First Name is not existed")
                 }
 
                 //Facebook Middle Name
-                if(jSonObject!!.has("middle_name"))
-                {
+                if (jSonObject!!.has("middle_name")) {
                     fbMiddleName = jSonObject.getString("middle_name")
                     Log.i(SOCIAL_ACTIVITY, "Middle Name is: $fbMiddleName")
-                }
-                else
-                {
+                } else {
                     Log.i(SOCIAL_ACTIVITY, "Middle Name is not existed")
                 }
 
                 //Facebook Last Name
-                if(jSonObject!!.has("last_name"))
-                {
+                if (jSonObject!!.has("last_name")) {
                     fbLastName = jSonObject.getString("last_name")
                     Log.i(SOCIAL_ACTIVITY, "Last Name is: $fbLastName")
-                }
-                else
-                {
+                } else {
                     Log.i(SOCIAL_ACTIVITY, "Last Name is not existed")
                 }
 
                 //Facebook Name
-                if(jSonObject!!.has("name"))
-                {
+                if (jSonObject!!.has("name")) {
                     fbName = jSonObject.getString("name")
                     Log.i(SOCIAL_ACTIVITY, "Name is: $fbName")
-                }
-                else
-                {
+                } else {
                     Log.i(SOCIAL_ACTIVITY, "Name is not existed")
                 }
 
                 //Facebook Picture URL
-                if(jSonObject!!.has("picture"))
-                {
+                if (jSonObject!!.has("picture")) {
                     val fbPicObject = jSonObject.getJSONObject("picture")
-                    if(fbPicObject.has("data"))
-                    {
+                    if (fbPicObject.has("data")) {
                         val fbDataObject = fbPicObject.getJSONObject("data")
-                        if(fbDataObject.has("url"))
-                        {
+                        if (fbDataObject.has("url")) {
                             val fbProfileURL = fbDataObject.getString("url")
                             Log.i(SOCIAL_ACTIVITY, "Facebook Profile Picture URL: $fbProfileURL")
                         }
                     }
-                }
-                else
-                {
+                } else {
                     Log.i(SOCIAL_ACTIVITY, "Facebook Profile Picture URL no existed")
                 }
 
                 //Facebook Email
-                if(jSonObject.has("email"))
-                {
+                if (jSonObject.has("email")) {
                     fbEmail = jSonObject.getString("email")
                     Log.i(SOCIAL_ACTIVITY, "Facebook Email is: $fbEmail")
-                }
-                else
-                {
+                } else {
                     Log.i(SOCIAL_ACTIVITY, "Facebook Email not existed")
                 }
 
@@ -291,33 +266,30 @@ class SocialLogInActivity : AppCompatActivity() {
         return presentToken != null && !presentToken.isExpired
     }
 
-    private fun isLoggedInByGoogle()
-    {
+    private fun isLoggedInByGoogle() {
         val userGoogle = firebaseAuth.currentUser
-        if(userGoogle!=null)
-        {
+        if (userGoogle != null) {
             //Logged In
-            val intent = Intent(this, MainActivity::class.java)
-            startActivity(intent)
-            finish()
+            intentToMain()
+            Log.i(SOCIAL_ACTIVITY, "Already Logged In")
         }
     }
 
-    private fun stringCovert(string:Int):String
-    {
+    private fun stringCovert(string: Int): String {
         return getString(string)
     }
 
-    private fun updateUIGoogle(user:FirebaseUser?)
-    {
+    private fun updateUIGoogle(user: FirebaseUser?) {
         //Intent to Main Activity
-        if(user==null)
-        {
+        if (user == null) {
             Log.w(SOCIAL_ACTIVITY, "Null user")
             return
         }
+        intentToMain()
+    }
+
+    private fun intentToMain() {
         val intent = Intent(this, MainActivity::class.java)
         startActivity(intent)
-        finish()
     }
 }

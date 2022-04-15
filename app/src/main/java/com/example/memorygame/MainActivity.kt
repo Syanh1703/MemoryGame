@@ -5,7 +5,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.media.MediaPlayer
-import android.net.InetAddresses
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -26,8 +25,10 @@ import com.example.memorygame.utils.ACTIVITY
 import com.example.memorygame.utils.CHOSEN_BOARD_SIZE
 import com.example.memorygame.utils.EXTRA_GAME_NAME
 import com.facebook.CallbackManager
+import com.facebook.FacebookSdk
 import com.facebook.login.LoginManager
 import com.github.jinatonic.confetti.CommonConfetti
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.analytics.ktx.logEvent
@@ -57,12 +58,12 @@ class MainActivity : AppCompatActivity() {
     private val firebaseAnalytics = Firebase.analytics
 
     //Audio effect
-    private var mediaPlayer :MediaPlayer? = null
+    private var mediaPlayer: MediaPlayer? = null
 
     //Log out Google
-    private lateinit var firebaseAuth :FirebaseAuth
+    private lateinit var firebaseAuth: FirebaseAuth
 
-    private lateinit var callbackManager : CallbackManager
+    private lateinit var callbackManager: CallbackManager
     private lateinit var loginManager: LoginManager
 
     companion object {
@@ -75,30 +76,24 @@ class MainActivity : AppCompatActivity() {
 
         //facebookKeyHash()
 
-        remoteConfig.setDefaultsAsync(mapOf("about_link" to "https://github.com/Syanh1703/MemoryGame", "scale_height" to 250L, "scale_width" to 60L))
-        remoteConfig.fetchAndActivate().addOnCompleteListener {
-            task -> if(task.isSuccessful)
-        {
+        remoteConfig.setDefaultsAsync(
+            mapOf(
+                "about_link" to "https://github.com/Syanh1703/MemoryGame",
+                "scale_height" to 250L,
+                "scale_width" to 60L
+            )
+        )
+        remoteConfig.fetchAndActivate().addOnCompleteListener { task ->
+            if (task.isSuccessful) {
                 Log.i(ACTIVITY, "Fetch/activate succeeded, did config get updated? ${task.result}")
-        }
-            else
-        {
-            Log.w(ACTIVITY, "Fetch failed")
-        }
+            } else {
+                Log.w(ACTIVITY, "Fetch failed")
+            }
         }
         setUpGame()
 
-        if(SocialLogInActivity.fbName != null)
-        {
-            Toast.makeText(this, "${stringConvert(R.string.welcome_user)} : ${SocialLogInActivity.fbName}", Toast.LENGTH_SHORT).show()
-        }
-        else
-        {
-            Toast.makeText(this, stringConvert(R.string.welcome_user), Toast.LENGTH_SHORT).show()
-        }
-
         //Google Sign Out
-        firebaseAuth = Firebase.auth
+        firebaseAuth = FirebaseAuth.getInstance()
 
         //Facebook Log Out
         callbackManager = CallbackManager.Factory.create()
@@ -114,11 +109,18 @@ class MainActivity : AppCompatActivity() {
             R.id.miRefresh -> {
                 //Reset the game
                 if (memoryGame.getNumMoves() > 0 && !memoryGame.hasWonGame()) {
-                    showWaringDialog(stringConvert(R.string.refresh_game), null, View.OnClickListener {
-                        setUpGame()
-                        Toast.makeText(this, stringConvert(R.string.refresh_done), Toast.LENGTH_SHORT)
-                            .show()
-                    })
+                    showWaringDialog(
+                        stringConvert(R.string.refresh_game),
+                        null,
+                        View.OnClickListener {
+                            setUpGame()
+                            Toast.makeText(
+                                this,
+                                stringConvert(R.string.refresh_done),
+                                Toast.LENGTH_SHORT
+                            )
+                                .show()
+                        })
                 } else {
                     setUpGame()
                 }
@@ -147,13 +149,17 @@ class MainActivity : AppCompatActivity() {
             }
             R.id.miGGLogOut -> {
                 firebaseAuth.signOut()
-                updateSignOutUI()
-                return true
+                Log.i(ACTIVITY, "Sign out Google")
+                val logOutIntent = Intent(this, SocialLogInActivity::class.java)
+                logOutIntent.flags =
+                    Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
+                startActivity(logOutIntent)
             }
             R.id.miFBLogOut -> {
+                FacebookSdk.sdkInitialize(applicationContext)
                 //loginManager.logOut()
-                //updateSignOutUI()
-                Toast.makeText(this,"Still working", Toast.LENGTH_SHORT).show()
+                updateSignOutUI()
+                Toast.makeText(this, "Still working", Toast.LENGTH_SHORT).show()
                 /**
                  * Need to finish it
                  */
@@ -162,6 +168,7 @@ class MainActivity : AppCompatActivity() {
         }
         return super.onOptionsItemSelected(item)
     }
+
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (requestCode == REQUEST_CODE && resultCode == Activity.RESULT_OK) {
@@ -333,22 +340,25 @@ class MainActivity : AppCompatActivity() {
         //Let the user choose the size
         val boardSizeLevel = LayoutInflater.from(this).inflate(R.layout.dialog_level, null)
         val radioGroupOptions = boardSizeLevel.findViewById<RadioGroup>(R.id.radioGroupOptions)
-        showWaringDialog(stringConvert(R.string.create_board), boardSizeLevel, View.OnClickListener {
-            val chosenSize = when (radioGroupOptions.checkedRadioButtonId) {
-                R.id.rbEasy -> BoardSize.EASY
-                R.id.rbMedium -> BoardSize.MEDIUM
-                R.id.rbHard -> BoardSize.HARD
-                else -> BoardSize.EXTREMELY_HARD
-            }
-            firebaseAnalytics.logEvent("create_start)activity") {
-                param("board_size", chosenSize.name)
-            }
-            //Navigate the user to the new activity
-            val intent = Intent(this, CreateBoardActivity::class.java)
-            intent.putExtra(CHOSEN_BOARD_SIZE, chosenSize)
-            startActivityForResult(intent, REQUEST_CODE)
+        showWaringDialog(
+            stringConvert(R.string.create_board),
+            boardSizeLevel,
+            View.OnClickListener {
+                val chosenSize = when (radioGroupOptions.checkedRadioButtonId) {
+                    R.id.rbEasy -> BoardSize.EASY
+                    R.id.rbMedium -> BoardSize.MEDIUM
+                    R.id.rbHard -> BoardSize.HARD
+                    else -> BoardSize.EXTREMELY_HARD
+                }
+                firebaseAnalytics.logEvent("create_start)activity") {
+                    param("board_size", chosenSize.name)
+                }
+                //Navigate the user to the new activity
+                val intent = Intent(this, CreateBoardActivity::class.java)
+                intent.putExtra(CHOSEN_BOARD_SIZE, chosenSize)
+                startActivityForResult(intent, REQUEST_CODE)
 
-        })
+            })
     }
 
     private fun showGameToDownloadDialog() {
@@ -361,47 +371,39 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    private fun playMusic(mp3:Int)
-    {
+    private fun playMusic(mp3: Int) {
         //Play the sound
         mediaPlayer = MediaPlayer.create(this, mp3)
-        Toast.makeText(this, "The music is playing", Toast.LENGTH_SHORT).show()
+        Log.d(ACTIVITY, "Playing music")
         mediaPlayer!!.start()
-        mediaPlayer!!.setVolume(100F,100F)
-        mediaPlayer!!.pause()
+        mediaPlayer!!.setVolume(100F, 100F)
     }
 
-    private fun facebookKeyHash()
-    {
-        try{
-            val info = packageManager.getPackageInfo("com.example.memorygame", PackageManager.GET_SIGNATURES)
-            for(signature in info.signatures)
-            {
+    private fun facebookKeyHash() {
+        try {
+            val info = packageManager.getPackageInfo(
+                "com.example.memorygame",
+                PackageManager.GET_SIGNATURES
+            )
+            for (signature in info.signatures) {
                 val md = MessageDigest.getInstance("SHA")
                 md.update(signature.toByteArray())
                 Log.e(ACTIVITY, Base64.encodeToString(md.digest(), Base64.DEFAULT))
             }
-        }
-        catch (e: PackageManager.NameNotFoundException)
-        {
+        } catch (e: PackageManager.NameNotFoundException) {
 
-        }
-        catch (e: NoSuchAlgorithmException)
-        {
+        } catch (e: NoSuchAlgorithmException) {
 
         }
     }
 
-    private fun stringConvert(string:Int):String
-    {
+    private fun stringConvert(string: Int): String {
         return getString(string)
     }
 
-    private fun updateSignOutUI()
-    {
+    private fun updateSignOutUI() {
         val intent = Intent(this, SocialLogInActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)
-        finish()
     }
 }
