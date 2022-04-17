@@ -38,7 +38,6 @@ class CreateBoardActivity : AppCompatActivity() {
     //Variables for Firebase
     private val fbStorage = Firebase.storage
     private val fireStore = Firebase.firestore
-    private val remoteConfig = Firebase.remoteConfig
 
     companion object {
         const val PHOTOS_REQUEST_CODE = 1703

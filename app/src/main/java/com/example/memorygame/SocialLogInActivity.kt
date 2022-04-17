@@ -64,11 +64,11 @@ class SocialLogInActivity : AppCompatActivity() {
         //firebaseAuth = FirebaseAuth.getInstance()
         firebaseAuth = Firebase.auth
         callbackManager = CallbackManager.Factory.create()
-        btnContOnFB.setOnClickListener {
+        /*btnContOnFB.setOnClickListener {
             LoginManager.getInstance()
                 .logInWithReadPermissions(this, listOf("public_profile", "email"))
         }
-        signInWithFacebook()
+        signInWithFacebook()*/
 
         //Google
         //isLoggedInByGoogle()
@@ -78,7 +78,6 @@ class SocialLogInActivity : AppCompatActivity() {
             .requestEmail()
             .build()
         googleSignInClient = GoogleSignIn.getClient(this, gso)
-        lastSignedGoogle = GoogleSignIn.getLastSignedInAccount(this)!!
 
         btnGoogle.setOnClickListener {
             val signingIntent = googleSignInClient.signInIntent
@@ -133,7 +132,7 @@ class SocialLogInActivity : AppCompatActivity() {
 
     }
 
-    private fun signInWithFacebook() {
+    /*private fun signInWithFacebook() {
         btnContOnFB.registerCallback(callbackManager, object : FacebookCallback<LoginResult> {
             override fun onCancel() {
                 Toast.makeText(
@@ -152,7 +151,7 @@ class SocialLogInActivity : AppCompatActivity() {
                 getUserProfile(result.accessToken, result.accessToken.userId)
             }
         })
-    }
+    }*/
 
     private fun handleFacebookAccess(accessToken: AccessToken?) {
         /**

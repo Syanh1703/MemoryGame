@@ -32,9 +32,4 @@
         android:id="@+id/miGGLogOut"
         android:title="@string/log_out_google"
         app:showAsAction="never"/>
-
-    <item
-        android:id="@+id/miFBLogOut"
-        android:title="Log Out Facebook Account"
-        app:showAsAction="never"/>
 </menu>

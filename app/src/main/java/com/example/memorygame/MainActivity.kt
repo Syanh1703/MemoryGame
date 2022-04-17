@@ -8,6 +8,7 @@ import android.media.MediaPlayer
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.util.Base64
 import android.util.Log
 import android.view.LayoutInflater
@@ -28,12 +29,10 @@ import com.facebook.CallbackManager
 import com.facebook.FacebookSdk
 import com.facebook.login.LoginManager
 import com.github.jinatonic.confetti.CommonConfetti
-import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.analytics.ktx.logEvent
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.remoteconfig.ktx.remoteConfig
@@ -41,6 +40,7 @@ import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.activity_main.*
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -66,9 +66,20 @@ class MainActivity : AppCompatActivity() {
     private lateinit var callbackManager: CallbackManager
     private lateinit var loginManager: LoginManager
 
+
     companion object {
         const val REQUEST_CODE = 1804
+        const val TIMER_EASY:Long = 30000
+        const val TIMER_MED:Long = 45000
+        const val TIMER_HARD:Long = 60000
+        const val TIMER_EX_HARD:Long = 90000
     }
+
+    //Add a countdown timer
+    private var countDownInterval: Long = 1000
+    private lateinit var countDownTimer: CountDownTimer
+    private var timeLeftInMillis :Long = TIMER_EASY
+    private var isTimerRunning:Boolean? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -154,16 +165,6 @@ class MainActivity : AppCompatActivity() {
                 logOutIntent.flags =
                     Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
                 startActivity(logOutIntent)
-            }
-            R.id.miFBLogOut -> {
-                FacebookSdk.sdkInitialize(applicationContext)
-                //loginManager.logOut()
-                updateSignOutUI()
-                Toast.makeText(this, "Still working", Toast.LENGTH_SHORT).show()
-                /**
-                 * Need to finish it
-                 */
-                return true
             }
         }
         return super.onOptionsItemSelected(item)
@@ -291,8 +292,9 @@ class MainActivity : AppCompatActivity() {
                 }
             })
         rvBoard.adapter = gameAdapter
-        rvBoard.layoutManager = GridLayoutManager(this, boardSize.getGameWidth())
         //Span count stands for the number of columns
+        rvBoard.layoutManager = GridLayoutManager(this, boardSize.getGameWidth())
+
         tvPairs.text = "${stringConvert(R.string.pair)}:0/${boardSize.getGamePairs()}"
         tvMoves.text = "${stringConvert(R.string.moves)}:0"
     }
@@ -405,5 +407,37 @@ class MainActivity : AppCompatActivity() {
         val intent = Intent(this, SocialLogInActivity::class.java)
         intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)
+    }
+
+    private fun startCountDownTimer()
+    {
+        countDownTimer = object :CountDownTimer(timeLeftInMillis,countDownInterval)
+        {
+            override fun onTick(millisUntilFinished: Long) {
+                timeLeftInMillis = millisUntilFinished
+                updateTimer()
+            }
+
+            override fun onFinish() {
+                isTimerRunning = false
+            }
+        }.start()
+        //Start the timer
+        isTimerRunning = true
+    }
+
+    private fun updateTimer()
+    {
+        val initialMinLeft = (timeLeftInMillis/1000)/60
+        val initialSecLeft = (timeLeftInMillis/1000)%60
+
+        val timeLeftString = String.format(Locale.getDefault(), "%02d:%02d", initialMinLeft, initialSecLeft)
+        tvCountDown.text = timeLeftString
+    }
+
+    private fun resetTimer()
+    {
+        timeLeftInMillis = TIMER_EASY
+        updateTimer()
     }
 }

@@ -1,5 +1,7 @@
 package com.example.memorygame.models
 
+import android.os.CountDownTimer
+
 enum class BoardSize(val numCards: Int) {
     //Define number of cards in each level
     /**
