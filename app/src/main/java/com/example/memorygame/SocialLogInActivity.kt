@@ -4,12 +4,12 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.text.TextUtils
 import android.util.Log
+import android.util.Patterns
 import android.widget.Toast
 import com.facebook.*
 import com.facebook.BuildConfig
-import com.facebook.login.LoginManager
-import com.facebook.login.LoginResult
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -36,6 +36,9 @@ class SocialLogInActivity : AppCompatActivity() {
     private var fbMiddleName: String? = null
     private var fbLastName: String? = null
     private var fbEmail: String? = null
+
+    private var userEmail :String = ""
+    private var userPass :String = ""
 
     companion object {
         const val SOCIAL_ACTIVITY = "SocialLogInActivity"
@@ -82,6 +85,12 @@ class SocialLogInActivity : AppCompatActivity() {
         btnGoogle.setOnClickListener {
             val signingIntent = googleSignInClient.signInIntent
             startActivityForResult(signingIntent, GG_CODE)
+        }
+
+        checkUser()
+        //Normal Log In
+        btnLogIn.setOnClickListener {
+            validateLogIn()
         }
     }
 
@@ -290,5 +299,64 @@ class SocialLogInActivity : AppCompatActivity() {
     private fun intentToMain() {
         val intent = Intent(this, MainActivity::class.java)
         startActivity(intent)
+    }
+
+    private fun checkUser()
+    {
+        val firebaseUser = firebaseAuth.currentUser
+        if(firebaseUser!= null)
+        {
+            val intent = Intent(this, MainActivity::class.java)
+            startActivity(intent)
+            finish()
+        }
+    }
+
+    private fun validateLogIn()
+    {
+        userEmail = etUserName.text.toString().trim()
+        userPass = etPassword.text.toString().trim()
+
+        if(!Patterns.EMAIL_ADDRESS.matcher(userEmail).matches())
+        {
+            //Invalid Email
+            etUserName.error = getString(R.string.invalid_email)
+        }
+        else if(TextUtils.isEmpty(userPass)&&userPass.length<8)
+        {
+            etPassword.error = getString(R.string.incorrect_pass)
+            Toast.makeText(this, "Password must be at least 8 letters", Toast.LENGTH_SHORT).show()
+        }
+        else
+        {
+            //Valid data
+            logInToFirebase()
+        }
+    }
+
+    private fun logInToFirebase()
+    {
+        firebaseAuth.signInWithEmailAndPassword(userEmail, userPass)
+            .addOnSuccessListener {
+                val firebaseUser = firebaseAuth.currentUser
+                val name = firebaseUser!!.displayName
+                Toast.makeText(this, "${getString(R.string.log_in_success)}, welcome $name", Toast.LENGTH_SHORT).show()
+                intentToMain()
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, getString(R.string.login_failed_google), Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun signUpToFirebase()
+    {
+        //Sign Up first
+        firebaseAuth.createUserWithEmailAndPassword(userEmail,userPass)
+            .addOnSuccessListener {
+                logInToFirebase()
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, getString(R.string.log_in_failed), Toast.LENGTH_SHORT).show()
+            }
     }
 }

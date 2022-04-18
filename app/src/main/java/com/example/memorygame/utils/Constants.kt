@@ -6,6 +6,11 @@ const val CHOSEN_BOARD_SIZE = "Board Size"
 const val EXTRA_GAME_NAME = "name"
 const val ACTIVITY = "SyAnh"
 
+const val TIMER_EASY:Long = 15000
+const val TIMER_MED:Long = 40000
+const val TIMER_HARD:Long = 60000
+const val TIMER_EX_HARD:Long = 90000
+
 
 val DEFAULT_ICONS = listOf(
     R.drawable.ic_android_black_24dp,

@@ -41,4 +41,10 @@
     <string name="welcome_user">Xin chào</string>
     <string name="login_failed_google">Đăng nhạp thất bại vì</string>
     <string name="login_cancel">Đăng nhập bị huỷ bỏ</string>
+    <string name="start_game">Hãy hoàn thành trò chơi trước khi hết thời gian</string>
+    <string name="lost_game">Chinh phục lại thử thách nào!!</string>
+    <string name="invalid_email">Email không hợp lệ</string>
+    <string name="incorrect_pass">Mật khấu không đúng</string>
+    <string name="log_in_success">Đăng nhập thành công</string>
+    <string name="log_in_failed">Đăng nhâp thất bại</string>
 </resources>

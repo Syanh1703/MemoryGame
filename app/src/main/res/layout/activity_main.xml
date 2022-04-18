@@ -61,12 +61,18 @@
 
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/tvCountDown"
+    <cn.iwgang.countdownview.CountdownView
+        android:id="@+id/cvCountDown"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="25sp"
-        android:text="00:00"
+        app:isShowMinute="true"
+        app:isShowSecond="true"
+        app:timeTextSize="25sp"
+        app:isTimeTextBold="true"
+        app:suffixTextSize="12sp"
+        app:timeBgColor="@color/light_blue"
+        app:suffixTextColor="@color/white"
+        app:timeTextColor="@color/teal_200"
         android:layout_margin="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -82,6 +88,6 @@
         app:layout_constraintBottom_toTopOf="@+id/llGameInfo"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvCountDown" />
+        app:layout_constraintTop_toBottomOf="@id/cvCountDown" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

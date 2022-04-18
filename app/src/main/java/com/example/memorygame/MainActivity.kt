@@ -8,7 +8,6 @@ import android.media.MediaPlayer
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.os.CountDownTimer
 import android.util.Base64
 import android.util.Log
 import android.view.LayoutInflater
@@ -22,12 +21,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.GridLayoutManager
 import com.example.memorygame.models.BoardSize
 import com.example.memorygame.models.MemoryGame
-import com.example.memorygame.utils.ACTIVITY
-import com.example.memorygame.utils.CHOSEN_BOARD_SIZE
-import com.example.memorygame.utils.EXTRA_GAME_NAME
+import com.example.memorygame.utils.*
 import com.facebook.CallbackManager
-import com.facebook.FacebookSdk
-import com.facebook.login.LoginManager
 import com.github.jinatonic.confetti.CommonConfetti
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.analytics.ktx.analytics
@@ -37,10 +32,10 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.remoteconfig.ktx.remoteConfig
 import com.squareup.picasso.Picasso
+import io.paperdb.Paper
 import kotlinx.android.synthetic.main.activity_main.*
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
-import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -64,22 +59,23 @@ class MainActivity : AppCompatActivity() {
     private lateinit var firebaseAuth: FirebaseAuth
 
     private lateinit var callbackManager: CallbackManager
-    private lateinit var loginManager: LoginManager
 
 
     companion object {
         const val REQUEST_CODE = 1804
-        const val TIMER_EASY:Long = 30000
-        const val TIMER_MED:Long = 45000
-        const val TIMER_HARD:Long = 60000
-        const val TIMER_EX_HARD:Long = 90000
+        const val IS_START_TIMER_KEY = "Is Started"
+        const val TIME_REMAIN = "Time Remain"
+        const val LAST_SAVED_TIME = "Last Saved Time"
     }
 
     //Add a countdown timer
     private var countDownInterval: Long = 1000
-    private lateinit var countDownTimer: CountDownTimer
     private var timeLeftInMillis :Long = TIMER_EASY
     private var isTimerRunning:Boolean? = null
+    private var remainTime:Long? = null
+    private var currentTime: Long? = null
+    private var lastSavedTime :Long? = null
+    private var resultTime :Long? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -101,6 +97,9 @@ class MainActivity : AppCompatActivity() {
                 Log.w(ACTIVITY, "Fetch failed")
             }
         }
+
+        cvCountDown.allShowZero()
+        initTimer()
         setUpGame()
 
         //Google Sign Out
@@ -122,37 +121,43 @@ class MainActivity : AppCompatActivity() {
                 if (memoryGame.getNumMoves() > 0 && !memoryGame.hasWonGame()) {
                     showWaringDialog(
                         stringConvert(R.string.refresh_game),
-                        null,
-                        View.OnClickListener {
-                            setUpGame()
-                            Toast.makeText(
-                                this,
-                                stringConvert(R.string.refresh_done),
-                                Toast.LENGTH_SHORT
-                            )
-                                .show()
-                        })
+                        null
+                    ) {
+                        setUpGame()
+                        Toast.makeText(
+                            this,
+                            stringConvert(R.string.refresh_done),
+                            Toast.LENGTH_SHORT
+                        )
+                            .show()
+                    }
+                    resetTimer()
                 } else {
+                    resetTimer()
                     setUpGame()
                 }
                 return true
             }
             R.id.miChooseLevel -> {
+                cvCountDown.stop()
                 showLevelDialog()
                 return true
             }
             R.id.miCreateGame -> {
                 //Create the custom game here
+                cvCountDown.stop()
                 showCreateDialog()
                 return true
             }
             R.id.miPlayCustomGame -> {
                 //Play the created game by user
+                cvCountDown.stop()
                 showGameToDownloadDialog()
                 return true
             }
             R.id.miAbout -> {
                 //Give information about the app
+                cvCountDown.stop()
                 firebaseAnalytics.logEvent("open_about_link", null)
                 val aboutLink = remoteConfig.getString("about_link")
                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(aboutLink)))
@@ -160,11 +165,13 @@ class MainActivity : AppCompatActivity() {
             }
             R.id.miGGLogOut -> {
                 firebaseAuth.signOut()
+                cvCountDown.stop()
                 Log.i(ACTIVITY, "Sign out Google")
                 val logOutIntent = Intent(this, SocialLogInActivity::class.java)
                 logOutIntent.flags =
                     Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
                 startActivity(logOutIntent)
+                finish()
             }
         }
         return super.onOptionsItemSelected(item)
@@ -221,6 +228,7 @@ class MainActivity : AppCompatActivity() {
                     Snackbar.LENGTH_SHORT
                 ).show()
                 gameName = createdGameName
+                initTimer()
                 setUpGame()
             }.addOnFailureListener { exception ->
                 Log.e(ACTIVITY, "Error in loading  starting game", exception)
@@ -252,6 +260,7 @@ class MainActivity : AppCompatActivity() {
                 "${getString(R.string.pair)}: ${memoryGame.numPairsFound}/${boardSize.getGamePairs()}"
             tvMoves.text = "${R.string.moves}:0"
             if (memoryGame.hasWonGame()) {
+                cvCountDown.stop()
                 Toast.makeText(this, stringConvert(R.string.win_game), Toast.LENGTH_SHORT).show()
                 //Play the sound
                 playMusic(R.raw.yayyy)
@@ -297,14 +306,33 @@ class MainActivity : AppCompatActivity() {
 
         tvPairs.text = "${stringConvert(R.string.pair)}:0/${boardSize.getGamePairs()}"
         tvMoves.text = "${stringConvert(R.string.moves)}:0"
+
+        //Set the timer depend to the level
+        startGameDialog(getString(R.string.start_game), null) {
+            timeLeftInMillis = boardSize.getTimer()
+            cvCountDown.start(timeLeftInMillis)
+            initTimer()
+        }
     }
 
     private fun showWaringDialog(title: String, view: View?, positiveClick: View.OnClickListener) {
         val warningDialog = AlertDialog.Builder(this)
         warningDialog.setTitle(title)
         warningDialog.setView(view)
-        warningDialog.setNegativeButton(stringConvert(R.string.cancel), null)
+        warningDialog.setCancelable(false)
+        warningDialog.setNegativeButton(getString(R.string.cancel), null)
         warningDialog.setPositiveButton("OK")
+        { _, _ ->
+            positiveClick.onClick(null)
+        }.show()
+    }
+
+    private fun startGameDialog(title: String, view: View?, positiveClick: View.OnClickListener) {
+        val startGameDialog = AlertDialog.Builder(this)
+        startGameDialog.setTitle(title)
+        startGameDialog.setView(view)
+        startGameDialog.setCancelable(false)
+        startGameDialog.setPositiveButton("OK")
         { _, _ ->
             positiveClick.onClick(null)
         }.show()
@@ -321,7 +349,7 @@ class MainActivity : AppCompatActivity() {
             BoardSize.HARD -> radioGroupOptions.check(R.id.rbHard)
             BoardSize.EXTREMELY_HARD -> radioGroupOptions.check(R.id.rbSuperHard)
         }
-        showWaringDialog(stringConvert(R.string.chooseLevel), boardSizeLevel, View.OnClickListener {
+        showWaringDialog(stringConvert(R.string.chooseLevel), boardSizeLevel) {
             boardSize = when (radioGroupOptions.checkedRadioButtonId) {
                 R.id.rbEasy -> BoardSize.EASY
                 R.id.rbMedium -> BoardSize.MEDIUM
@@ -333,8 +361,9 @@ class MainActivity : AppCompatActivity() {
              */
             gameName = null
             customGameImages = null
+            resetTimer()//Reset the timer when level changed
             setUpGame()
-        })
+        }
     }
 
     private fun showCreateDialog() {
@@ -344,33 +373,34 @@ class MainActivity : AppCompatActivity() {
         val radioGroupOptions = boardSizeLevel.findViewById<RadioGroup>(R.id.radioGroupOptions)
         showWaringDialog(
             stringConvert(R.string.create_board),
-            boardSizeLevel,
-            View.OnClickListener {
-                val chosenSize = when (radioGroupOptions.checkedRadioButtonId) {
-                    R.id.rbEasy -> BoardSize.EASY
-                    R.id.rbMedium -> BoardSize.MEDIUM
-                    R.id.rbHard -> BoardSize.HARD
-                    else -> BoardSize.EXTREMELY_HARD
-                }
-                firebaseAnalytics.logEvent("create_start)activity") {
-                    param("board_size", chosenSize.name)
-                }
-                //Navigate the user to the new activity
-                val intent = Intent(this, CreateBoardActivity::class.java)
-                intent.putExtra(CHOSEN_BOARD_SIZE, chosenSize)
-                startActivityForResult(intent, REQUEST_CODE)
+            boardSizeLevel
+        ) {
+            val chosenSize = when (radioGroupOptions.checkedRadioButtonId) {
+                R.id.rbEasy -> BoardSize.EASY
+                R.id.rbMedium -> BoardSize.MEDIUM
+                R.id.rbHard -> BoardSize.HARD
+                else -> BoardSize.EXTREMELY_HARD
+            }
+            firebaseAnalytics.logEvent("create_start_activity") {
+                param("board_size", chosenSize.name)
+            }
+            //Navigate the user to the new activity
+            val intent = Intent(this, CreateBoardActivity::class.java)
+            intent.putExtra(CHOSEN_BOARD_SIZE, chosenSize)
+            startActivityForResult(intent, REQUEST_CODE)
 
-            })
+        }
     }
 
     private fun showGameToDownloadDialog() {
         val downloadBoard = LayoutInflater.from(this).inflate(R.layout.download_board, null)
         val etDownloadGame = downloadBoard.findViewById<EditText>(R.id.etDownloadGame)
-        showWaringDialog(stringConvert(R.string.fetch), downloadBoard, View.OnClickListener {
+        showWaringDialog(stringConvert(R.string.fetch), downloadBoard) {
             //Grab the text of the game name that user wants to download
             val downloadGameName = etDownloadGame.text.toString()
             downloadGame(downloadGameName)
-        })
+        }
+        initTimer()
     }
 
     private fun playMusic(mp3: Int) {
@@ -403,41 +433,72 @@ class MainActivity : AppCompatActivity() {
         return getString(string)
     }
 
-    private fun updateSignOutUI() {
-        val intent = Intent(this, SocialLogInActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK
-        startActivity(intent)
-    }
-
-    private fun startCountDownTimer()
+    private fun initTimer()
     {
-        countDownTimer = object :CountDownTimer(timeLeftInMillis,countDownInterval)
+        Paper.init(this)
+        isTimerRunning = Paper.book().read(IS_START_TIMER_KEY,false)
+        timeLeftInMillis = boardSize.getTimer()
+        if(isTimerRunning!!)
         {
-            override fun onTick(millisUntilFinished: Long) {
-                timeLeftInMillis = millisUntilFinished
-                updateTimer()
+            cvCountDown.start(timeLeftInMillis)
+            Paper.book().write(IS_START_TIMER_KEY,true)
+            checkTimer()
+        }
+        else{
+            cvCountDown.start(timeLeftInMillis)
+            Paper.book().write(IS_START_TIMER_KEY,true)
+            cvCountDown.setOnCountdownEndListener {
+                Toast.makeText(this, "Time is up", Toast.LENGTH_SHORT).show()
+                if(!memoryGame.hasWonGame())
+                {
+                    startGameDialog(getString(R.string.lost_game), null) {
+                        setUpGame()
+                        Toast.makeText(
+                            this,
+                            stringConvert(R.string.refresh_done),
+                            Toast.LENGTH_SHORT
+                        )
+                            .show()
+                    }
+                }
+                resetTimer()
             }
-
-            override fun onFinish() {
-                isTimerRunning = false
-            }
-        }.start()
-        //Start the timer
-        isTimerRunning = true
+            cvCountDown.setOnCountdownIntervalListener(countDownInterval
+            ) { _, remainTime -> Log.i(ACTIVITY, "Remain Time is: $remainTime") }
+        }
     }
 
-    private fun updateTimer()
+    private fun checkTimer()
     {
-        val initialMinLeft = (timeLeftInMillis/1000)/60
-        val initialSecLeft = (timeLeftInMillis/1000)%60
-
-        val timeLeftString = String.format(Locale.getDefault(), "%02d:%02d", initialMinLeft, initialSecLeft)
-        tvCountDown.text = timeLeftString
+        currentTime = System.currentTimeMillis()
+        lastSavedTime = Paper.book().read<Long>(LAST_SAVED_TIME, 0)!!
+        remainTime = Paper.book().read(TIME_REMAIN,0)!!.toLong()
+        resultTime = remainTime!! + (lastSavedTime!! - currentTime!!)
+        lastSavedTime = 0
+        remainTime = 0
+        if(resultTime!! > 0)
+        {
+            cvCountDown.start(resultTime!!)
+        }
+        else
+        {
+            cvCountDown.stop()
+            resetTimer()
+        }
     }
 
     private fun resetTimer()
     {
-        timeLeftInMillis = TIMER_EASY
-        updateTimer()
+        Paper.book().delete(IS_START_TIMER_KEY)
+        Paper.book().delete(LAST_SAVED_TIME)
+        Paper.book().delete(TIME_REMAIN)
+        isTimerRunning = false
     }
+
+    override fun onStop() {
+        Paper.book().write(TIME_REMAIN, cvCountDown.remainTime)
+        Paper.book().write(LAST_SAVED_TIME,System.currentTimeMillis())
+        super.onStop()
+    }
+
 }

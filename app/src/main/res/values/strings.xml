@@ -44,5 +44,11 @@
     <string name="welcome_user">Welcome</string>
     <string name="login_failed_google">Login failed due to</string>
     <string name="login_cancel">Login Cancelled</string>
+    <string name="start_game">Find all the pairs before the time runs out!!</string>
+    <string name="lost_game">Conquer the challenge again</string>
+    <string name="invalid_email">Invalid Email</string>
+    <string name="incorrect_pass">Incorrect Password</string>
+    <string name="log_in_success">Log In Success</string>
+    <string name="log_in_failed">Log In Failed</string>
 
 </resources>

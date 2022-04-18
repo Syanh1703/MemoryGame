@@ -1,16 +1,19 @@
 package com.example.memorygame.models
 
-import android.os.CountDownTimer
+import com.example.memorygame.utils.TIMER_EASY
+import com.example.memorygame.utils.TIMER_EX_HARD
+import com.example.memorygame.utils.TIMER_HARD
+import com.example.memorygame.utils.TIMER_MED
 
-enum class BoardSize(val numCards: Int) {
+enum class BoardSize(val numCards: Int, val timeLimit:Long) {
     //Define number of cards in each level
     /**
      * Implement type-safe
      */
-    EASY(8),
-    MEDIUM(18),
-    HARD(24),
-    EXTREMELY_HARD(40);
+    EASY(8, TIMER_EASY),
+    MEDIUM(18, TIMER_MED),
+    HARD(24, TIMER_HARD),
+    EXTREMELY_HARD(40, TIMER_EX_HARD);
 
     companion object {
         fun getCardsByValue(value: Any) = values().first { it.numCards == value }
@@ -34,6 +37,11 @@ enum class BoardSize(val numCards: Int) {
     //Determine the pairs of card depend on each level
     fun getGamePairs(): Int {
         return numCards / 2
+    }
+
+    fun getTimer():Long
+    {
+        return timeLimit
     }
 
 }
